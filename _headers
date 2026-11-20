@@ -1,0 +1,9 @@
+/oyna-dyc99f/*
+  X-Robots-Tag: noindex, nofollow
+  Referrer-Policy: no-referrer
+
+/oyna-dyc99f/assets/*
+  Cache-Control: public, max-age=604800
+
+/api/*
+  X-Robots-Tag: noindex

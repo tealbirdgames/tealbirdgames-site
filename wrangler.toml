@@ -1,0 +1,8 @@
+name = "tealbirdgames-site"
+pages_build_output_dir = "."
+compatibility_date = "2026-11-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "ferrytales-challenge"
+database_id = "145588ea-5f7a-4d85-8ff4-952a0a6ce94c"
