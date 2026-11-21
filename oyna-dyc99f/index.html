@@ -1638,6 +1638,12 @@ body,button,input,textarea{line-height:1.2}
 .flink i{position:absolute;left:50%;top:calc(var(--fs,44px)*-.02);width:calc(var(--fs,44px)*.5);height:calc(var(--fs,44px)*.34);transform:translate(-50%,-50%);display:grid;place-items:center;background:linear-gradient(#fff6d8,#ffd970);border-radius:5px;box-shadow:0 0 0 1.5px #b07a12,0 2px 3px rgba(0,0,0,.3);font:400 calc(var(--fs,44px)*.22)/1 'Lilita One','Fredoka',sans-serif;color:#7a4a00;z-index:2}
 .flink i::before,.flink i::after{content:'';position:absolute;top:50%;width:calc(var(--fs,44px)*.09);height:calc(var(--fs,44px)*.09);margin-top:calc(var(--fs,44px)*-.045);border-radius:50%;background:color-mix(in srgb,var(--c) 38%,#fff 62%)}
 .flink i::before{left:calc(var(--fs,44px)*-.045)}.flink i::after{right:calc(var(--fs,44px)*-.045)}
+/* v1.43 bekleme alanında grup bandı */
+.bband{position:absolute;pointer-events:none;z-index:1;border-radius:16px;background:color-mix(in srgb,var(--c) 30%,transparent);box-shadow:0 0 0 3px #fff,0 0 0 6px var(--c),0 4px 10px rgba(0,0,0,.3);animation:bbIn .35s cubic-bezier(.3,1.5,.5,1)}
+.bband b{position:absolute;left:50%;bottom:0;transform:translate(-50%,62%);z-index:5;padding:2px 8px 1px;white-space:nowrap;background:linear-gradient(#fff6d8,#ffd970);border-radius:7px;box-shadow:0 0 0 1.5px #b07a12,0 2px 3px rgba(0,0,0,.3);font:400 12px/1.25 'Lilita One','Fredoka',sans-serif;color:#7a4a00}
+@keyframes bbIn{from{transform:scale(.85);opacity:0}to{transform:none;opacity:1}}
+.fig.bfam.bjoin::after{display:none}
+@media (prefers-reduced-motion:reduce){.bband{animation:none}}
 .fig.bfam::after{content:'2';position:absolute;right:-8%;bottom:0;width:36%;height:26%;display:grid;place-items:center;background:linear-gradient(#fff6d8,#ffd970);border-radius:4px;box-shadow:0 0 0 1.5px #b07a12,0 1px 2px rgba(0,0,0,.35);font:400 11px/1 'Lilita One','Fredoka',sans-serif;color:#7a4a00;z-index:2}
 
 /* geniş tahta kaydırma */
@@ -2661,6 +2667,16 @@ function buildBench(){
   benchEl.innerHTML='';slots=[];
   for(let k=0;k<G.bench.length;k++){const s=document.createElement('div');s.className='slot';if(G.wsSlot===k){s.classList.add('wsb');s.innerHTML='<i class="wsg"></i><b class="wsf">🔥</b>';s.onclick=()=>{if(G&&G.bench[k]==null)toast('🔥 '+tt('Galibiyet serisi ödülü: +1 bekleme yeri','Win streak reward: +1 seat'),true);};}benchEl.appendChild(s);slots.push(s);}
 }
+function benchBands(){if(!G||!benchEl)return;let sig=G.bench.map((c,k)=>c==null?'_':c+':'+G.bf[k]).join(',')+'|'+benchEl.offsetWidth+'|'+(slots[0]?slots[0].offsetWidth:0);if(sig===benchEl._bbs)return;benchEl._bbs=sig;
+  benchEl.querySelectorAll('.bband').forEach(e=>e.remove());benchFigs.forEach(f=>{if(f)f.classList.remove('bjoin');});
+  G.bench.forEach((c,k)=>{const m=G.bf[k];if(c==null||m==null||m<0||m<k||!slots[k]||!slots[m])return;
+    const A=slots[k],B=slots[m],x0=Math.min(A.offsetLeft,B.offsetLeft),x1=Math.max(A.offsetLeft+A.offsetWidth,B.offsetLeft+B.offsetWidth);
+    if(Math.abs(m-k)!==1)return; /* bitişik değilse eski "2" rozeti kalır */
+    const d=document.createElement('div');d.className='bband';d.style.setProperty('--c',(COLORS[c]||{}).c||'#ffd970');
+    d.style.left=(x0-3)+'px';d.style.top=(A.offsetTop-3)+'px';d.style.width=(x1-x0+6)+'px';d.style.height=(A.offsetHeight+6)+'px';
+    d.innerHTML='<b>🎫 '+tt('Grup','Group')+'</b>';benchEl.appendChild(d);
+    [benchFigs[k],benchFigs[m]].forEach(f=>{if(f)f.classList.add('bjoin');});});}
+setInterval(()=>{try{benchBands();}catch(e){}},150);
 function seatPt(k){const c=center(slots[k]),r=relRect(slots[k]);return{x:c.x,y:c.y-r.h*.08};}
 function positionBench(anim){benchFigs.forEach((f,k)=>{if(f){if(anim)fly(f,seatPt(k),benchScale());else place(f,seatPt(k),benchScale());}});}
 function positionPier(){return;const p=$('pierimg');if(!p)return;const fw=ferryEl.offsetWidth,fh=ferryEl.offsetHeight;if(!fw)return;const fr=relRect($('sea'));const left=fr.x+ferryEl.offsetLeft-fw/2;const doorX=left+fw*.6,doorB=fr.y+ferryEl.offsetTop+fh*.74;const bw=relRect($('benchwrap'));const end=bw.y+bw.w*.16*.62;const w=Math.max(30,fw*.15);p.style.left=(doorX-w/2)+'px';p.style.width=w+'px';p.style.top=doorB+'px';p.style.height=Math.max(10,end-doorB)+'px';p.style.display=$('sea').classList.contains('ist')?'block':'none';}
@@ -2888,7 +2904,7 @@ async function onTap0(i){
     if(G.load===CAP)await departLoop();
   }else{
     const sl=unit.length===2?famSlots():[G.bench.indexOf(null)];
-    sl.forEach((k,q)=>{G.bench[k]=col;benchFigs[k]=fg[q];G.bf[k]=unit.length===2?sl[1-q]:-1;if(unit.length===2)fg[q].classList.add('bfam');});
+    sl.forEach((k,q)=>{G.bench[k]=col;benchFigs[k]=fg[q];G.bf[k]=unit.length===2?sl[1-q]:-1;if(unit.length===2)fg[q].classList.add('bfam');});try{benchBands();}catch(e){}
     G.bh.push({cells:unit.slice(),slots:sl,col});G.combo=0;
     updateReach();sfx.pick();
     if(unit.length===2&&col===fc)toast(tt('Vapurda 2 yer yoktu, grup beklemeye geçti','No room for 2 on the ferry, the group waits'));
