@@ -7,3 +7,8 @@
 
 /api/*
   X-Robots-Tag: noindex
+
+/site.css
+  Cache-Control: public, max-age=300
+/site.js
+  Cache-Control: public, max-age=300
