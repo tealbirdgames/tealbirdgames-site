@@ -3,5 +3,4 @@
 /.wrangler/* /404 200
 /ferry-tales /vapura-yetis/ 301
 /ferry-tales/ /vapura-yetis/ 301
-/knock-shot https://knockshot.tealbirdgames.com/ 302
-/knockshot https://knockshot.tealbirdgames.com/ 302
+/knockshot /knock-shot/ 301
