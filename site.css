@@ -202,3 +202,4 @@ h2{color:var(--ink2)}
 .val{background:rgba(255,255,255,.06)}
 .gband{background:linear-gradient(90deg,#e3f4f2,#f3f7f8)}
 footer{background:#0b1a2b}
+.shero .kicker .dot{width:8px;height:8px;border-radius:50%;background:var(--brand);box-shadow:0 0 0 4px rgba(23,168,156,.18)}
