@@ -229,3 +229,9 @@ body.ksp{background:#f3f5fa}
 .ksshots img{box-shadow:0 0 0 3px #0c0c10,0 10px 22px rgba(10,21,48,.3)}
 .ksp .feat,.ksp .card{border:1px solid #c9d0e2;border-left:6px solid #f5c400;box-shadow:0 10px 24px rgba(10,21,48,.06)}
 @media (max-width:760px){.kshero .wrap{grid-template-columns:1fr;text-align:center}.kslogo,.kshero .tag{margin-left:auto;margin-right:auto}.ksbtns{justify-content:center}.ksphone{transform:none}.kssteps{grid-template-columns:1fr}.ksshots{justify-content:flex-start}}
+
+/* Knock Shot kapak ve dünya kartları */
+.ks-cover{position:relative;display:block;width:100%;max-width:1080px;height:auto;max-height:350px;margin:0 auto;object-fit:cover;object-position:center 79%}
+.ks-worlds{padding:12px 0 32px}
+.ks-worlds .games{margin-top:20px}
+.ks-world-art{display:block;width:100%;height:auto}
