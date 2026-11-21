@@ -31,11 +31,18 @@
     <img class="appic" src="/img/icon.webp" alt="Vapura Yetiş">
     <h1><span lang="tr">Vapura Yetiş</span><span lang="en">Ferry Tales</span></h1>
     <p class="tag"><span lang="tr">Yolcuları renklerine göre vapura bindir, iskeleyi boşalt; İstanbul'dan Venedik'e, Amsterdam'a ve Paris'e uzan!</span><span lang="en">Match passengers to their ferries, clear the pier and sail from Istanbul to Venice, Amsterdam and Paris!</span></p>
-    <a class="cta" href="#oyun">⛴️ <span lang="tr">Oyunu keşfet</span><span lang="en">Explore the game</span></a>
+    <a class="cta" href="#video">⛴️ <span lang="tr">Tanıtım filmini izle</span><span lang="en">Watch the trailer</span></a>
     <span class="soon"><span lang="tr">Çok yakında App Store ve Google Play'de, ücretsiz.</span><span lang="en">Coming soon to the App Store and Google Play, free to play.</span></span>
   </div>
   <div class="phone"><img lang="tr" src="/img/tr_1_play_ist.webp" alt="Vapura Yetiş oyun ekranı"><img lang="en" src="/img/en_1_play_ist.webp" alt="Ferry Tales gameplay"></div>
 </div></div>
+
+<section class="vy-video" id="video"><div class="wrap">
+  <h2><span lang="tr">Herkes vapura yetişebilecek mi?</span><span lang="en">Will everyone make the ferry?</span></h2>
+  <p class="lead"><span lang="tr">Vapura Yetiş'in tanıtım filmi: İstanbul'da gün batımı, kalabalık bir iskele ve sabırsızlanan bir vapur.</span><span lang="en">The Ferry Tales trailer: sunset over Istanbul, a busy pier and a very impatient ferry.</span></p>
+  <video id="vyv" controls playsinline muted loop preload="none" poster="/img/vy_tanitim_poster.webp" width="720" height="1280"><source src="/img/vy_tanitim.mp4" type="video/mp4"></video>
+  <p class="vy-hint"><span lang="tr">🔊 Sesi açmak için videoya dokun</span><span lang="en">🔊 Tap the video to turn the sound on</span></p>
+</div></section>
 
 <section id="oyun"><div class="wrap">
   <h2><span lang="tr">Rahatlatan bir bulmaca, tanıdık şehirler</span><span lang="en">A relaxing puzzle in cities you'll love</span></h2>
@@ -73,5 +80,7 @@
   <span class="sp"><span lang="tr">Google Play, Google LLC'nin; App Store, Apple Inc.'in ticari markasıdır.</span><span lang="en">Google Play is a trademark of Google LLC. App Store is a trademark of Apple Inc.</span></span>
 </div></footer>
 <script src="/site.js"></script>
+<script>(function(){var v=document.getElementById('vyv');if(!v||!('IntersectionObserver' in window))return;var io=new IntersectionObserver(function(e){e.forEach(function(x){if(x.isIntersecting){var p=v.play();if(p&&p.catch)p.catch(function(){});}else v.pause();});},{threshold:.5});io.observe(v);})();</script>
+
 </body>
 </html>

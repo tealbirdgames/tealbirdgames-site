@@ -240,3 +240,9 @@ body.ksp{background:#f3f5fa}
 .ks-video{padding:40px 0 12px;text-align:center}
 .ks-video .ksh::after{margin-inline:auto}
 .ks-video video{display:block;width:100%;max-width:360px;height:auto;aspect-ratio:6/13;margin:20px auto 0;border-radius:22px;background:#0a1530;box-shadow:0 10px 24px rgba(10,21,48,.16)}
+
+/* Vapura Yetiş tanıtım videosu */
+.vy-video{text-align:center;padding-top:30px}
+.vy-video .lead{margin-left:auto;margin-right:auto}
+.vy-video video{display:block;width:100%;max-width:340px;height:auto;aspect-ratio:9/16;margin:8px auto 0;border-radius:30px;background:#0e1a30;box-shadow:0 0 0 5px #fff,0 0 0 7px #e3c995,0 20px 40px rgba(22,40,74,.25)}
+.vy-hint{margin:14px 0 0;font-size:14px;color:var(--soft)}
