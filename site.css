@@ -235,3 +235,8 @@ body.ksp{background:#f3f5fa}
 .ks-worlds{padding:12px 0 32px}
 .ks-worlds .games{margin-top:20px}
 .ks-world-art{display:block;width:100%;height:auto}
+
+/* Knock Shot tanıtım videosu */
+.ks-video{padding:40px 0 12px;text-align:center}
+.ks-video .ksh::after{margin-inline:auto}
+.ks-video video{display:block;width:100%;max-width:360px;height:auto;aspect-ratio:6/13;margin:20px auto 0;border-radius:22px;background:#0a1530;box-shadow:0 10px 24px rgba(10,21,48,.16)}
