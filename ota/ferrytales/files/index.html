@@ -1156,6 +1156,10 @@ body,button,input,textarea{line-height:1.2}
 /* v0.65 harita başlığı */
 .rhd2{position:relative;display:flex;align-items:center;justify-content:center;min-height:82px;padding:0 62px;margin:0 0 4px}
 .rhd2 .cbk{left:12px;top:16px}
+.rcty{display:flex;gap:6px;justify-content:center;padding:0 10px 8px;overflow-x:auto;scrollbar-width:none}.rcty::-webkit-scrollbar{display:none}
+.rcty button{flex:0 0 auto;min-width:78px;border:0;border-radius:14px;padding:5px 10px 4px;background:#fff4dc;box-shadow:0 0 0 2px #c9a46f,0 3px 0 2px #a07c4a;color:#6b4a22;font:inherit;cursor:pointer;line-height:1.1}
+.rcty button b{display:block;font-size:13px}.rcty button small{font-size:11px;opacity:.85}
+.rcty button.on{background:radial-gradient(circle at 38% 30%,#8fd0ff 0,#3b8fe0 55%,#215fae 100%);color:#fff;box-shadow:0 0 0 2px #fff4dc,0 3px 0 2px #215fae}
 .rttl{display:flex;flex-direction:column;align-items:center;width:100%;max-width:300px}
 .rttl .crib b{text-shadow:0 2px 0 #24427f,0 0 3px #24427f!important}
 .rprog{margin-top:-10px;display:flex;align-items:center;gap:7px;background:linear-gradient(#fff8ea,#f1dcb3);border:2px solid #c9a46f;box-shadow:0 3px 0 #a07c4a;border-radius:14px;padding:3px 10px;position:relative;z-index:1}
@@ -3547,7 +3551,7 @@ function perkCard(i,big){
 }
 
 /* ---------- ana menü ---------- */
-let menuTab='home',citySel=null;
+let menuTab='home',citySel=null,roadCity=null;
 function curLandmark(){const n=nextRestore();if(n)return n.i;const c=CITIES[cityOfLevel(curLevel())];return c.lm[1]-1;}
 function openMenu(tab){if(G&&G.busy)return;menuTab=tab||'home';hideModal();try{clubDaily();}catch(e){}renderMenu();$('menu').classList.add('show');if(menuTab==='home')requestAnimationFrame(layoutHome);snowFx();try{startMusic();}catch(e){}}
 function closeMenu(){$('menu').classList.remove('show');snowFx();try{startMusic();}catch(e){}}
@@ -3810,7 +3814,7 @@ function dailyReward(){
   sfx.coin();showModal('<div class="em">🧰</div><h2>'+tt('Günlük hediye!','Daily gift!')+'</h2><p>'+tt('Gün '+st+' · +'+amt+' altın','Day '+st+' · +'+amt+' coins')+'</p>'+row+'<div class="btns"><button class="btn" id="drOk">'+tt('Harika!','Great!')+'</button></div>');
   $('drOk').onclick=()=>{hideModal();renderMenu();};
 }
-function openRoad(anim){menuTab='road';window._rdAnimPending=!!anim;hideModal();if(!$('menu').classList.contains('show')){$('menu').classList.add('show');}renderMenu();if(anim)setTimeout(()=>roadAnim(),350);}
+function openRoad(anim){menuTab='road';roadCity=null;window._rdAnimPending=!!anim;hideModal();if(!$('menu').classList.contains('show')){$('menu').classList.add('show');}renderMenu();if(anim)setTimeout(()=>roadAnim(),350);}
 function roadNodeXY(k,H){return{x:180+Math.sin(k*1.05)*92,y:H-190-k*96};}
 function islandSVG(x,y,s,kind,id,ven){
   let t='';
@@ -3834,7 +3838,10 @@ const RT=[[.375,.933],[.266,.907],[.219,.863],[.234,.837],[.258,.811],[.359,.767
 const RPAD=[[.41,.90],[.73,.76],[.32,.68],[.69,.57],[.31,.46],[.72,.38],[.32,.31],[.70,.24],[.32,.17],[.55,.09]];
 const RDK=[[.27,.905],[.64,.80],[.41,.71],[.60,.60],[.40,.485],[.65,.415],[.395,.34],[.63,.27],[.40,.20],[.53,.12]];
 function renderRoad(){
-  const L=Math.min(curLevel(),MAXL+1),blocked=gateBlocked(L),RL=Math.min(MAXL,blocked?L-1:L),start=Math.floor((RL-1)/30)*30+1,ci=cityOfLevel(RL),C=CITIES[ci],N=30,lvst=store.get('lvst',{});
+  const L0=Math.min(curLevel(),MAXL+1),bl0=gateBlocked(L0),RL0=Math.min(MAXL,bl0?L0-1:L0),curCi=cityOfLevel(RL0);
+  /* v1.48: geçmiş şehirlerin yol haritası görüntülenebilir (yıldız kontrolü, tekrar oynama) */
+  if(roadCity!=null&&(roadCity>=curCi||roadCity<0))roadCity=null;
+  const past=roadCity!=null,L=past?roadCity*30+31:L0,blocked=past?false:bl0,RL=past?roadCity*30+30:RL0,start=Math.floor((RL-1)/30)*30+1,ci=cityOfLevel(RL),C=CITIES[ci],N=30,lvst=store.get('lvst',{});
   const nextC=CITIES[ci+1];
   const SW=Math.min(480,($('menu')&&$('menu').clientWidth)||360),SH=SW*2580/1440,H=SH*3;
   const sTop=s=>H-(s+1)*SH,SK2=SW/360;
@@ -3854,7 +3861,7 @@ function renderRoad(){
   fx+='<div class="rhz" style="top:0;height:'+(SH*.07)+'px"></div>';
   fx+='<span class="rport" style="top:'+(H-40)+'px">⚓ '+C.n+_t(' Limanı')+'</span>';
   const dn=Object.keys(lvst).filter(l=>l>=start&&l<start+N).length;
-  const cs=Math.floor(Math.max(0,Math.min(N-1,L-start))/10),fogK='fogSeen'+start,pend=cs>0&&store.get(fogK,0)<cs;window._rdFog={pend,cs,fogK,viaShip:pend&&window._rdAnimPending&&L-start===cs*10};
+  const cs=Math.floor(Math.max(0,Math.min(N-1,L-start))/10),fogK='fogSeen'+start,pend=!past&&cs>0&&store.get(fogK,0)<cs;window._rdFog={pend,cs,fogK,viaShip:pend&&window._rdAnimPending&&L-start===cs*10};
   const CH=[[.80,.075],[.82,.085],[.84,.07]];
   for(let s=0;s<3;s++){const k=s*10+9,lv=start+k,open=lv<L,q=P(s,CH[s]);
     const fzc=(s>cs||(s===cs&&pend))?' fz':'';fx+='<div class="rchest'+(open?' open':'')+fzc+'" data-fs="'+s+'" style="left:'+(q.x-29)+'px;top:'+(q.y-26)+'px"><img src="assets/r_'+(open?'chestopen':'chest')+'.webp" alt=""><span>'+(open?_t('Açıldı'):'+50 🪙')+'</span></div>';}
@@ -3887,10 +3894,11 @@ function renderRoad(){
     const fs=Math.floor(k/10),fzc=(fs>cs||(fs===cs&&pend))?' fz':'';nodes+='<button class="nd nd2 nd3 nd4 '+state+' t'+t+(k===N-1?' boss':'')+fzc+'" data-fs="'+fs+'" data-l="'+lv+'" style="left:'+(x-38)+'px;top:'+(y-30)+'px"><i class="ndring"></i>'+(t===2?'<em>🔥</em>':t===1?'<em>⚡</em>':'')+([6,11,16].includes(lv)?'<u class="newb">'+({6:'🚧',11:'🔒',16:'🌫️'})[lv]+_t(' YENİ</u>'):'')+'<b>'+lv+'</b>'+(state==='done'?'<i class="nst">'+[0,1,2].map(j=>'<img src="assets/r_star.webp" class="'+(j<st?'':'off')+'" alt="">').join('')+'</i>':'')+'</button>';
   }
   const gateH=blocked?'<div class="gate"><i>🔒</i><div><b>'+tt(nextC.n+' kilitli!',nextC.n+' is locked!')+'</b><span>'+tt('Yola devam etmek için '+trGen(C.n)+' 8 simgesini restore et ('+cityDoneN(ci)+'/8)','Restore all 8 landmarks of '+C.n+' to sail on ('+cityDoneN(ci)+'/8)')+'</span></div><button class="tbtn" id="gateGo">'+tt('Restore et','Restore')+'</button></div>':'';
-  $('tab-road').innerHTML=gateH+'<div class="rhd2"><button class="cbk" id="rBack" aria-label="back"></button><div class="rttl"><div class="crib">'+ribbonSVG('blue')+'<b>'+C.n+'</b></div><div class="rprog"><span>'+_t('Bölüm ')+start+'–'+(start+N-1)+'</span><i><u style="width:'+(dn*100/N).toFixed(0)+'%"></u></i><em>'+dn+'/'+N+' '+tt('bitti','done')+'</em></div></div><button class="rglb" id="rWorld" aria-label="world"><img src="assets/m_globe.webp" alt=""></button></div><div class="rscroll rocean" id="rsc"><div class="rin rin2 rin3" style="height:'+H+'px">'+bg+nodes+'</div></div>';
+  $('tab-road').innerHTML=gateH+'<div class="rhd2"><button class="cbk" id="rBack" aria-label="back"></button><div class="rttl"><div class="crib">'+ribbonSVG('blue')+'<b>'+C.n+'</b></div><div class="rprog"><span>'+_t('Bölüm ')+start+'–'+(start+N-1)+'</span><i><u style="width:'+(dn*100/N).toFixed(0)+'%"></u></i><em>'+dn+'/'+N+' '+tt('bitti','done')+'</em></div></div><button class="rglb" id="rWorld" aria-label="world"><img src="assets/m_globe.webp" alt=""></button></div>'+(curCi>0?'<div class="rcty">'+CITIES.slice(0,curCi+1).map((c,k)=>{const lo=k*30+1,hi=k*30+30;let s3=0;for(let v=lo;v<=hi;v++)if((lvst[v]||0)>=3)s3++;return '<button class="'+(k===ci?'on':'')+'" data-rc="'+k+'"><b>'+c.n+'</b><small>'+(k<curCi?'⭐ '+s3+'/30':tt('Şu an','Now'))+'</small></button>';}).join('')+'</div>':'')+'<div class="rscroll rocean" id="rsc"><div class="rin rin2 rin3" style="height:'+H+'px">'+bg+nodes+'</div></div>';
   if($('gateGo'))$('gateGo').onclick=()=>{sfx.tap();citySel=curLandmark();menuTab='city';renderMenu();};
   $('rBack').onclick=()=>{sfx.tap();menuTab='home';renderMenu();};
   $('rWorld').onclick=()=>{sfx.tap();menuTab='world';renderMenu();};
+  document.querySelectorAll('#tab-road [data-rc]').forEach(b=>b.onclick=()=>{const k=+b.dataset.rc;if(k===ci)return;sfx.tap();roadCity=k<curCi?k:null;try{track('road_city',{city:k})}catch(e){}renderMenu();});
   document.querySelectorAll('.nd').forEach(b=>b.onclick=()=>{
     const lv=+b.dataset.l;
     if(b.classList.contains('cur')||b.classList.contains('done')){sfx.tap();preLevel(lv);}
@@ -5237,7 +5245,7 @@ function backBtn(){try{
 /* v1.46 Canlı güncelleme (Apple/Google onayı beklemeden): oyunun kodu ve görselleri tealbirdgames.com/ota/ferrytales'den
    güncellenir. Uygulama açılınca manifest kontrol edilir, sadece değişen dosyalar indirilir, oyuncu uygulamadan çıkıp dönünce yeni sürüm açılır.
    Yeni yerel eklenti gerektiren değişiklikler için manifestte native_min_ios / native_min_android (derleme numarası) yükseltilir. */
-const WEB_VER='1.47.0';
+const WEB_VER='1.48.0';
 const OTA_BASE='https://tealbirdgames.com/ota/ferrytales/';
 function verGT(a,b){const x=String(a).split('.').map(Number),y=String(b).split('.').map(Number);for(let i=0;i<3;i++){if((x[i]||0)>(y[i]||0))return true;if((x[i]||0)<(y[i]||0))return false;}return false;}
 async function otaCheck(){const U=plug('CapacitorUpdater');if(!U)return;
