@@ -581,7 +581,7 @@ header .coin{background:rgba(255,248,235,.92)!important;color:#5a3a19!important;
 
 /* v0.22 */
 #sea{height:calc(clamp(110px,20vh,190px) + 58px + var(--sat,env(safe-area-inset-top)))!important}
-#sea.ist{background:none center bottom/100% auto no-repeat,linear-gradient(#cfe0d2,#dfe2cc)!important}
+#sea.ist{background:none center bottom/cover no-repeat,linear-gradient(#cfe0d2,#dfe2cc)!important}
 #benchwrap{background:none center top/100% auto no-repeat,url(assets/bg_planks.webp) center top/100% auto repeat-y!important;padding-top:calc(min(100vw,480px) * .16)!important;margin-top:-1px}
 #app{--W:min(100vw,520px)}
 #pier{background:radial-gradient(ellipse at 50% 45%,rgba(90,55,25,.35),rgba(55,32,14,.75)),url(assets/bg_planks.webp) center top/100% auto repeat-y!important}
@@ -590,7 +590,7 @@ header .coin{background:rgba(255,248,235,.92)!important;color:#5a3a19!important;
 #gate{display:none!important}
 #ferry.sprf{left:calc(60% - (clamp(110px,20vh,190px) + 58px) * .44 + 18px)!important;bottom:6%!important}
 
-#sea.ist{background:url(assets/bg_top3.webp) center bottom/100% auto no-repeat,linear-gradient(#cfe0d2,#dfe2cc)!important}
+#sea.ist{background:url(assets/bg_top3.webp) center bottom/cover no-repeat,linear-gradient(#cfe0d2,#dfe2cc)!important}
 #benchwrap{background:none center top/100% auto no-repeat,url(assets/bg_planks.webp) center top/100% auto repeat-y!important}
 #pierimg{position:absolute;z-index:3;pointer-events:none;display:none;filter:drop-shadow(0 4px 3px rgba(0,40,60,.25))}
 #pierimg{z-index:4;transition:opacity .25s}
@@ -1757,7 +1757,7 @@ body,button,input,textarea{line-height:1.2}
 /* v1.01 kış görselleri */
 body.kis #menu.homeV #mstage{background-image:url(assets/m_bg4_kis.webp)!important}
 body.kis #menu.homeV{background:linear-gradient(#7d87a8,#6f8fb0)!important}
-body.kis #sea.ist{background:url(assets/bg_top3_kis.webp) center bottom/100% auto no-repeat,linear-gradient(#d3dce8,#e2e7ee)!important}
+body.kis #sea.ist{background:url(assets/bg_top3_kis.webp) center bottom/cover no-repeat,linear-gradient(#d3dce8,#e2e7ee)!important}
 body.kis #pier{background:radial-gradient(ellipse at 50% 40%,rgba(225,238,255,.10),rgba(40,42,60,.5) 90%),url(assets/bg_planks_kis.webp) center top/100% auto repeat-y!important}
 body.kis #app #benchwrap{background-image:url(assets/bg_planks_kis.webp)!important}
 body.kis #app #benchwrap::before{background-image:url(assets/bg_edge4_kis.webp)!important}
@@ -1971,18 +1971,18 @@ body.kis #app.ven.ams #pier{background:radial-gradient(ellipse at 50% 40%,rgba(2
 body.kis #app.ven.ams #benchwrap{background-image:url(assets/bg_planks_ams_kis.webp)!important}
 body.kis #app.ven.ams #benchwrap::before{background-image:url(assets/bg_edge_ams_kis.webp)!important}
 /* v1.01 Venedik üst görseli */
-#sea.ven{background:url(assets/bg_top_ven.webp) center bottom/100% auto no-repeat,linear-gradient(#f3e7cf,#f6ecd8)!important}
-body.kis #sea.ven{background:url(assets/bg_top_ven_kis.webp) center bottom/100% auto no-repeat,linear-gradient(#d6dde8,#e4e8ee)!important}
-#sea.ven.ams{background:url(assets/bg_top_ams.webp) center bottom/100% auto no-repeat,linear-gradient(#cfe9f0,#e9f2ee)!important}
-body.kis #sea.ven.ams{background:url(assets/bg_top_ams_kis.webp) center bottom/100% auto no-repeat,linear-gradient(#d6dde8,#e4e8ee)!important}
+#sea.ven{background:url(assets/bg_top_ven.webp) center bottom/cover no-repeat,linear-gradient(#f3e7cf,#f6ecd8)!important}
+body.kis #sea.ven{background:url(assets/bg_top_ven_kis.webp) center bottom/cover no-repeat,linear-gradient(#d6dde8,#e4e8ee)!important}
+#sea.ven.ams{background:url(assets/bg_top_ams.webp) center bottom/cover no-repeat,linear-gradient(#cfe9f0,#e9f2ee)!important}
+body.kis #sea.ven.ams{background:url(assets/bg_top_ams_kis.webp) center bottom/cover no-repeat,linear-gradient(#d6dde8,#e4e8ee)!important}
 #app.ven.par #pier{background:radial-gradient(ellipse at 50% 40%,rgba(255,235,200,.10),rgba(70,45,35,.45) 90%),url(assets/bg_planks_par.webp) center top/100% auto repeat-y!important}
 #app.ven.par #benchwrap{background-image:url(assets/bg_planks_par.webp)!important}
 #app.ven.par #benchwrap::before{background-image:url(assets/bg_edge_par.webp)!important}
 body.kis #app.ven.par #pier{background:radial-gradient(ellipse at 50% 40%,rgba(225,238,255,.10),rgba(40,42,60,.45) 90%),url(assets/bg_planks_par_kis.webp) center top/100% auto repeat-y!important}
 body.kis #app.ven.par #benchwrap{background-image:url(assets/bg_planks_par_kis.webp)!important}
 body.kis #app.ven.par #benchwrap::before{background-image:url(assets/bg_edge_par_kis.webp)!important}
-#sea.ven.par{background:url(assets/bg_top_par.webp) center bottom/100% auto no-repeat,linear-gradient(#cfe9f0,#e9f2ee)!important}
-body.kis #sea.ven.par{background:url(assets/bg_top_par_kis.webp) center bottom/100% auto no-repeat,linear-gradient(#d6dde8,#e4e8ee)!important}
+#sea.ven.par{background:url(assets/bg_top_par.webp) center bottom/cover no-repeat,linear-gradient(#cfe9f0,#e9f2ee)!important}
+body.kis #sea.ven.par{background:url(assets/bg_top_par_kis.webp) center bottom/cover no-repeat,linear-gradient(#d6dde8,#e4e8ee)!important}
 #sea.ven #skyline,#sea.ven #sun,#sea.ven .swv,#sea.ven .glint{display:none}
 #sea.ven.sunset{filter:none}
 #sea.ven.sunset::before{content:'';position:absolute;inset:0;background:linear-gradient(rgba(255,120,80,.30),rgba(80,40,90,.22));pointer-events:none}
@@ -5234,7 +5234,7 @@ function backBtn(){try{
 /* v1.46 Canlı güncelleme (Apple/Google onayı beklemeden): oyunun kodu ve görselleri tealbirdgames.com/ota/ferrytales'den
    güncellenir. Uygulama açılınca manifest kontrol edilir, sadece değişen dosyalar indirilir, oyuncu uygulamadan çıkıp dönünce yeni sürüm açılır.
    Yeni yerel eklenti gerektiren değişiklikler için manifestte native_min_ios / native_min_android (derleme numarası) yükseltilir. */
-const WEB_VER='1.46.0';
+const WEB_VER='1.46.1';
 const OTA_BASE='https://tealbirdgames.com/ota/ferrytales/';
 function verGT(a,b){const x=String(a).split('.').map(Number),y=String(b).split('.').map(Number);for(let i=0;i<3;i++){if((x[i]||0)>(y[i]||0))return true;if((x[i]||0)<(y[i]||0))return false;}return false;}
 async function otaCheck(){const U=plug('CapacitorUpdater');if(!U)return;
