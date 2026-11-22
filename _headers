@@ -12,3 +12,13 @@
   Cache-Control: public, max-age=300
 /site.js
   Cache-Control: public, max-age=300
+
+/ota/*
+  X-Robots-Tag: noindex, nofollow
+  Access-Control-Allow-Origin: *
+
+/ota/ferrytales/manifest.json
+  Cache-Control: no-store
+
+/ota/ferrytales/files/*
+  Cache-Control: public, max-age=300

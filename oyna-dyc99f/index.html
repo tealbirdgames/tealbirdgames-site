@@ -80,7 +80,7 @@ header{flex:none;display:flex;align-items:center;gap:10px;padding:calc(var(--sat
 .fig.ok{animation:idle 2.4s ease-in-out infinite}
 @keyframes idle{50%{translate:0 -1.5px}}
 .fig.blk{filter:brightness(.88) saturate(.8);opacity:.72}
-.fig.mv{transition:left .26s cubic-bezier(.3,.7,.4,1),top .26s cubic-bezier(.3,.7,.4,1),transform .26s ease}
+.fig.mv{transition:left .19s cubic-bezier(.3,.7,.4,1),top .19s cubic-bezier(.3,.7,.4,1),transform .19s ease}
 
 #toast{position:absolute;left:50%;top:calc(var(--sat,env(safe-area-inset-top)) + 66px);transform:translate(-50%,-10px);background:#d7263d;color:#fff;font-weight:800;font-size:14px;padding:8px 14px;border-radius:12px;opacity:0;transition:.2s;z-index:8;pointer-events:none;white-space:nowrap}
 #toast.show{opacity:1;transform:translate(-50%,0)}
@@ -616,6 +616,8 @@ header .coin{background:rgba(255,248,235,.92)!important;color:#5a3a19!important;
 .mtabs button{border-radius:16px!important;color:#7a5530!important;background:none!important;box-shadow:none!important}
 .mtabs button.on{background:linear-gradient(#ffd75e,#eba51a)!important;color:#5a3300!important;box-shadow:inset 0 2px 0 rgba(255,255,255,.55),0 3px 0 #b8770c!important}
 .mtabs button i{font-style:normal;display:block;height:30px}
+.mtabs button.tplay{display:none!important}
+#modal,.chlb,.pscroll,.rscroll,.stbl,.tab{overflow-x:hidden!important;overscroll-behavior-x:none}
 .mtabs button i img{height:30px;width:auto;filter:drop-shadow(0 2px 1px rgba(0,0,0,.2))}
 .hv{display:flex;flex-direction:column;align-items:center;min-height:100%;padding:6px 12px 10px;box-sizing:border-box}
 .hlogo{position:relative;width:min(70%,300px);margin-top:calc(var(--sat,env(safe-area-inset-top)) + 46px)}
@@ -2140,6 +2142,7 @@ html[lang=en] .hside>*.nu::before,html[lang=en] .hpbar.nu::before{content:'NEW'}
 .wkchest>img{height:46px;flex:none}.wkchest>div{flex:1}.wkchest b{display:block;color:#4a2f12}.wkchest small{display:block;font-size:11.5px;color:#7a5a32;margin-bottom:2px}
 
 .fig i.hat .hst{position:absolute;inset:0;display:block;background:var(--c);mix-blend-mode:multiply;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;pointer-events:none}
+.clfine a{color:inherit;font-weight:700}
 /* v1.44 günlük bölüm */
 .hday{position:relative;border:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;background:linear-gradient(135deg,#fff3d6,#ffc96b);border-radius:16px;padding:4px 7px 6px;box-shadow:0 0 0 2px #d08a1c,0 4px 0 2px #9a5f0e,0 6px 10px rgba(0,0,0,.22)}
 .hday .hdi{font-size:28px;line-height:1;margin-top:-10px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.3))}
@@ -2480,7 +2483,11 @@ function hornNote(delay,dur,vol,pm){
   const ns=a.createBufferSource(),nb=a.createBiquadFilter(),ng=a.createGain();ns.buffer=NOISE;ns.loop=true;nb.type='bandpass';nb.frequency.value=950;nb.Q.value=1.2;ng.gain.value=.09;
   ns.connect(nb);nb.connect(ng);ng.connect(out);ns.start(t0);ns.stop(t0+dur+.5);
 }
-function buzz(ms){if(!vibOn)return;try{const H=NATIVE()&&plug('Haptics');if(H){H.vibrate({duration:Math.max(10,Array.isArray(ms)?ms.reduce((a,b,i)=>i%2?a:a+b,0):ms)});return;}navigator.vibrate&&navigator.vibrate(ms);}catch(e){}}
+function buzz(ms){if(!vibOn)return;try{const H=NATIVE()&&plug('Haptics');
+  if(H){/* v1.46: kısa, tok titreşim. iOS'ta vibrate() hep ~0,4 sn uzun titrer; dokunuşlarda impact kullan */
+    const st=v=>v<=20?'LIGHT':v<=45?'MEDIUM':'HEAVY',hit=v=>{try{H.impact({style:st(v)});}catch(e){}};
+    if(Array.isArray(ms)){let t=0;ms.forEach((v,k)=>{if(k%2===0)setTimeout(()=>hit(Math.min(v,60)),t);t+=v;});}else hit(ms);return;}
+  navigator.vibrate&&navigator.vibrate(Array.isArray(ms)?ms.map(v=>Math.min(v,40)):Math.min(ms,40));}catch(e){}}
 /* gerçek sesler (ElevenLabs) — yüklenmezse eski sentez sesler devreye girer */
 const SNDV=1,SNDN=['tap','seat','no','horn','horn2','coin','magic','win','lose','combo','star','chest','unlock','gondola','water','ui'];
 const SNDVOL={tap:.55,seat:.55,no:.5,horn:.42,horn2:.46,coin:.5,magic:.55,win:.6,lose:.55,combo:.5,star:.5,chest:.6,unlock:.5,gondola:.5,water:.45,ui:.4};
@@ -2567,9 +2574,9 @@ async function fly(el,p,scale,delay){
     const sx=parseFloat(el.style.left)+figSize/2,sy=parseFloat(el.style.top)+figSize/2,col=getComputedStyle(el).getPropertyValue('--c');
     for(let k=1;k<=5;k++){const d=document.createElement('div');d.className='trail';d.style.background=col;const t=k/6;d.style.left=(sx+(p.x-sx)*t-5)+'px';d.style.top=(sy+(p.y-sy)*t-5-Math.sin(t*Math.PI)*18)+'px';stage.appendChild(d);setTimeout(()=>d.remove(),520);d.style.animationDelay=(k*35)+'ms';}}
   el.classList.add('mv');el.style.zIndex=3;
-  if(!fast){const sy0=parseFloat(el.style.top),dy=Math.abs(p.y-figSize/2-sy0),ah=Math.min(46,16+dy*.12);try{el.animate([{translate:'0 0'},{translate:'0 -'+ah+'px',offset:.42},{translate:'0 0'}],{duration:280,easing:'cubic-bezier(.3,.6,.5,1)'});}catch(e){}}
+  if(!fast){const sy0=parseFloat(el.style.top),dy=Math.abs(p.y-figSize/2-sy0),ah=Math.min(46,16+dy*.12);try{el.animate([{translate:'0 0'},{translate:'0 -'+ah+'px',offset:.42},{translate:'0 0'}],{duration:200,easing:'cubic-bezier(.3,.6,.5,1)'});}catch(e){}}
   place(el,p,scale);
-  await wait(fast?170:280);el.classList.remove('mv');el.style.zIndex='';
+  await wait(fast?170:200);el.classList.remove('mv');el.style.zIndex='';
   if(!fast){try{el.animate([{scale:'1.18 .8'},{scale:'.92 1.08',offset:.45},{scale:'1.03 .98',offset:.75},{scale:'1'}],{duration:260,easing:'ease-out'});}catch(e){}}
 }
 function benchScale(){const w=slots[0]?slots[0].getBoundingClientRect().width:54;return Math.min(1.25,w*.98/figSize);}
@@ -2747,7 +2754,7 @@ function anDays(){const i=store.get('inst',0)||Date.now();return Math.floor((Dat
 function stat(L,k,n){const st=store.get('stats',{});st[L]=st[L]||{t:0,f:0,b:0,w:0};st[L][k]+=n||1;store.set('stats',st);}
 /* v1.40 Remote Config: Firebase'den güncelleme çıkmadan değiştirilebilen ayarlar.
    Varsayılan değerler burada [varsayılan, en az, en çok]; uzaktan gelen değer sınır dışındaysa yok sayılır. */
-const RCF_DEF={ad_inter_from:[19,5,200],ad_inter_gap_sec:[90,30,600],ad_inter_prep:[2,0,10],ad_coin_daily:[5,0,20],ad_noads_offer_max:[2,0,10],ad_refresh_min:[55,10,59],ad_reward_units:[''],ad_inter_units:[''],eco_level_mult:[1,.5,3],eco_replay_coins:[5,0,50],race_on:[true],race_bot_time:[1,.3,5],ban_on:[true],ban_from:[5,1,200],club_on:[true],loop_on:[true],day_on:[true],day_from:[21,5,200],net_on:[true],net_from:[5,1,200]};
+const RCF_DEF={ad_inter_from:[19,5,200],ad_inter_gap_sec:[90,30,600],ad_inter_prep:[2,0,10],ad_coin_daily:[5,0,20],ad_noads_offer_max:[2,0,10],ad_refresh_min:[55,10,59],ad_test:[true],ota_on:[true],ad_reward_units:[''],ad_inter_units:[''],ad_reward_units_ios:[''],ad_inter_units_ios:[''],eco_level_mult:[1,.5,3],eco_replay_coins:[5,0,50],race_on:[true],race_bot_time:[1,.3,5],ban_on:[true],ban_from:[5,1,200],club_on:[true],loop_on:[true],day_on:[true],day_from:[21,5,200],net_on:[true],net_from:[5,1,200]};
 let RCF={},RCF_N=0;
 function rcfgSet(o){RCF={};RCF_N=0;for(const k in RCF_DEF){const d=RCF_DEF[k];let v=d[0];if(o&&o[k]!=null){const r=o[k];
     if(typeof d[0]==='number'){const n=parseFloat(r);if(isFinite(n)&&n>=d[1]&&n<=d[2]){v=n;RCF_N++;}}
@@ -2898,6 +2905,7 @@ function errLog(e){try{const l=store.get('errlog',[]);l.push(new Date().toISOStr
 window.addEventListener('error',e=>errLog(e.error||e.message));
 window.addEventListener('unhandledrejection',e=>errLog(e.reason));
 async function onTap0(i){
+  if(G&&G.busy&&!G.over&&!G.auto&&!T){G.qTap={i,t:Date.now()};return;}/* v1.46: animasyon sürerken gelen dokunuş kaybolmaz, hemen ardından işlenir */
   if(!G||G.busy||G.over)return;
   const col=G.cells[i];if(col==null||col<0)return;
   const fig=figs[i];
@@ -2923,7 +2931,7 @@ async function onTap0(i){
     if(unit.length===2&&col===fc)toast(tt('Vapurda 2 yer yoktu, grup beklemeye geçti','No room for 2 on the ferry, the group waits'));
     await Promise.all(fg.map((f,k)=>fly(f,seatPt(sl[k]),benchScale(),k*70)));
   }
-  G.busy=false;updateBoosters();checkEnd();tutAfterTap();maybeAuto();
+  G.busy=false;updateBoosters();checkEnd();tutAfterTap();{const q=G.qTap;G.qTap=null;if(q&&q.i!==i&&Date.now()-q.t<900&&!G.over&&!T)setTimeout(()=>onTap(q.i),0);}maybeAuto();
 }
 async function departLoop(){
   while(G.load===CAP){
@@ -4624,7 +4632,7 @@ function feedback(){
 }
 function openSettings(){
   const row=(id,ic,label,on)=>'<div class="srow"><span>'+ic+' '+label+'</span><button class="tog'+(on?' on':'')+'" id="'+id+'"><i></i></button></div>';
-  showModal(_t('<div class="em">⚙️</div><h2>Ayarlar</h2>')+'<div class="srow"><span>🌐 Dil / Language</span><span class="lgs"><button class="lg'+(LANG==='tr'?' on':'')+'" data-lg="tr">TR</button><button class="lg'+(LANG==='en'?' on':'')+'" data-lg="en">EN</button></span></div>'+row('tMus','🎵',_t('Müzik'),musicOn)+row('tSnd','🔊',_t('Ses efektleri'),soundOn)+row('tVib','📳',_t('Titreşim'),vibOn)+row('tNot','🔔',tt('Bildirimler','Notifications'),!store.get('notifOff',false))+row('tCb','👁️',tt('Renk körü modu','Colour-blind mode'),cbOn)+(psOwnsCos('hat_kis')||psOwnsCos('hat_yy')?row('tHat','🧣',tt('Kışlık kıyafetler','Winter outfits')+'<small id="tHatN" style="display:block;font-size:11px;opacity:.75">'+hatName(store.get('hatOn',null))+'</small>',!!store.get('hatOn',null)):'')+(store.get('dev',false)?row('tTest','🧪',_t('Test modu'),store.get('testmode',false))+row('tSea','🎆',tt('Yeni Yıl sezonunu önizle','Preview New Year season'),store.get('psForce',null)===1)+row('tRc','🏁',tt('Boğaz Yarışını şimdi aç','Open Bosphorus Race now'),!!store.get('rcForce',false))+'<p class="tnote" style="font-size:11px;margin:6px 0 0">'+adDbg()+'</p>':'')+(store.get('dev',false)&&store.get('testmode',false)?_t('<div class="tgo"><input id="tgoN" type="number" min="1" max="60" placeholder="Bölüm no"><button class="tbtn" id="tgoB">Bölüme git</button></div>')+'<div class="tgo"><button class="tbtn" id="tStar">+50 ⭐</button><button class="tbtn" id="tCoin">+500 🪙</button><button class="tbtn treset" id="tReset">'+tt('Sıfırla','Reset')+'</button></div>':'')+_t('<button class="btn alt" id="mHow" style="margin-top:14px">❓ Nasıl oynanır</button>')+(store.get('dev',false)?_t('<button class="btn alt" id="mStat">📊 Test istatistikleri</button>'):'')+_t('<button class="btn gold" id="mFb" style="margin-top:10px">💬 Geri bildirim gönder</button><button class="btn" id="mOk">Tamam</button>'));
+  showModal(_t('<div class="em">⚙️</div><h2>Ayarlar</h2>')+'<div class="srow"><span>🌐 Dil / Language</span><span class="lgs"><button class="lg'+(LANG==='tr'?' on':'')+'" data-lg="tr">TR</button><button class="lg'+(LANG==='en'?' on':'')+'" data-lg="en">EN</button></span></div>'+row('tMus','🎵',_t('Müzik'),musicOn)+row('tSnd','🔊',_t('Ses efektleri'),soundOn)+row('tVib','📳',_t('Titreşim'),vibOn)+row('tNot','🔔',tt('Bildirimler','Notifications'),!store.get('notifOff',false))+row('tCb','👁️',tt('Renk körü modu','Colour-blind mode'),cbOn)+(psOwnsCos('hat_kis')||psOwnsCos('hat_yy')?row('tHat','🧣',tt('Kışlık kıyafetler','Winter outfits')+'<small id="tHatN" style="display:block;font-size:11px;opacity:.75">'+hatName(store.get('hatOn',null))+'</small>',!!store.get('hatOn',null)):'')+(store.get('dev',false)?row('tTest','🧪',_t('Test modu'),store.get('testmode',false))+row('tSea','🎆',tt('Yeni Yıl sezonunu önizle','Preview New Year season'),store.get('psForce',null)===1)+row('tRc','🏁',tt('Boğaz Yarışını şimdi aç','Open Bosphorus Race now'),!!store.get('rcForce',false))+'<p class="tnote" style="font-size:11px;margin:6px 0 0">'+adDbg()+'</p>':'')+(store.get('dev',false)&&store.get('testmode',false)?_t('<div class="tgo"><input id="tgoN" type="number" min="1" max="60" placeholder="Bölüm no"><button class="tbtn" id="tgoB">Bölüme git</button></div>')+'<div class="tgo"><button class="tbtn" id="tStar">+50 ⭐</button><button class="tbtn" id="tCoin">+500 🪙</button><button class="tbtn treset" id="tReset">'+tt('Sıfırla','Reset')+'</button></div>':'')+(IOS()?'<button class="btn alt" id="mRest" style="margin-top:14px">🔄 '+tt('Satın alımları geri yükle','Restore purchases')+'</button>':'')+_t('<button class="btn alt" id="mHow" style="margin-top:14px">❓ Nasıl oynanır</button>')+(store.get('dev',false)?_t('<button class="btn alt" id="mStat">📊 Test istatistikleri</button>'):'')+_t('<button class="btn gold" id="mFb" style="margin-top:10px">💬 Geri bildirim gönder</button><button class="btn" id="mOk">Tamam</button>'));
   $('tSnd').onclick=()=>{soundOn=!soundOn;store.set('snd',soundOn);$('tSnd').classList.toggle('on',soundOn);if(soundOn){ac();sfx.tap();}};
   $('tNot').onclick=()=>{const off=!store.get('notifOff',false);store.set('notifOff',off);$('tNot').classList.toggle('on',!off);sfx.tap();if(off){const LN=plug('LocalNotifications');if(LN)LN.cancel({notifications:[11,12,13,14,15,16].map(id=>({id}))}).catch(()=>{});}};
   if($('tRc'))$('tRc').onclick=()=>{const on=!store.get('rcForce',false);store.set('rcForce',on);$('tRc').classList.toggle('on',on);sfx.tap();};
@@ -4637,6 +4645,7 @@ function openSettings(){
   $('mOk').onclick=hideModal;
   document.querySelectorAll('.lg').forEach(b=>b.onclick=()=>{try{localStorage.setItem('vy_lang',JSON.stringify(b.dataset.lg));}catch(e){}location.reload();});
   $('mFb').onclick=feedback;
+  if($('mRest'))$('mRest').onclick=()=>{sfx.tap();iapRestore();};
   if($('tTest'))$('tTest').onclick=()=>{store.set('testmode',!store.get('testmode',false));applyTest();openSettings();};
   {const h=document.querySelector('#card .mrib')||document.querySelector('#card h2');let n=0;if(h)h.onclick=()=>{if(++n>=7){n=0;const d=!store.get('dev',false);store.set('dev',d);if(!d){store.set('testmode',false);applyTest();}toast(d?'🧪 Geliştirici modu açık':'Geliştirici modu kapalı',true);openSettings();}};}
   if($('tReset'))$('tReset').onclick=()=>{showModal('<div class="em">⚠️</div><h2>'+tt('Oyunu sıfırla?','Reset game?')+'</h2><p>'+tt('Bütün ilerleme, yıldız, altın ve restorasyonlar silinir. Oyun Bölüm 1\'den başlar.','All progress, stars, coins and restorations will be erased. The game restarts from Level 1.')+'</p><button class="btn gold" id="rsYes">'+tt('Evet, sıfırla','Yes, reset')+'</button><button class="btn alt" id="rsNo">'+tt('Vazgeç','Cancel')+'</button>');$('rsNo').onclick=openSettings;$('rsYes').onclick=()=>{const keep={};['lang','snd','mus','vib','testmode'].forEach(k=>{const v=localStorage.getItem('vy_'+k);if(v!=null)keep[k]=v;});Object.keys(localStorage).filter(k=>k.startsWith('vy_')).forEach(k=>localStorage.removeItem(k));Object.entries(keep).forEach(([k,v])=>localStorage.setItem('vy_'+k,v));location.reload();};};if($('tStar'))$('tStar').onclick=()=>{setStars(stars+50,true);sfx.coin();toast('+50 ⭐ (test)',true);renderMenu();};if($('tCoin'))$('tCoin').onclick=()=>{setCoins(coins+500,true);sfx.coin();toast('+500 🪙 (test)',true);renderMenu();};if($('tgoB'))$('tgoB').onclick=()=>{const n=Math.max(1,Math.min(60,parseInt($('tgoN').value)||1));store.set('level',n);store.set('cityseen',cityOfLevel(n));hideModal();startLevel(n);closeMenu();openRoad(false);toast(_t('Bölüm ')+n+_t(' açıldı 🧪'),true);};
@@ -4944,14 +4953,20 @@ try{chBoot();}catch(e){}
 /* ---------- uygulama katmanı: bildirim + yedek (v1.01) ----------
    Tarayıcıda hiçbir şey yapmaz; Android paketinde Capacitor eklentileri varsa çalışır:
    @capacitor/local-notifications, @capacitor/app ve bulut kayıt eklentisi (PlayGamesSave adıyla). */
-const NATIVE=()=>window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform();
+const NATIVE=()=>window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform()
+const IOS=()=>{try{return !!(NATIVE()&&Capacitor.getPlatform&&Capacitor.getPlatform()==='ios');}catch(e){return false;}};
 function plug(n){const C=window.Capacitor;return C&&C.Plugins&&C.Plugins[n];}
 
 /* ---------- uygulama katmanı 2: reklam + satın alma + geri tuşu (v1.30) ----------
    ⚠ Yayından önce değişecekler: AD_UNITS (gerçek AdMob birim kimlikleri), android strings.xml admob_app_id,
    SKU listesindeki ürünler Play Console'da aynı kimliklerle açılmalı. */
-const AD_TEST=true;
-const AD_UNITS={reward:'ca-app-pub-3940256099942544/5224354917',inter:'ca-app-pub-3940256099942544/1033173712',banner:'ca-app-pub-3940256099942544/9214589741'}; // Google'ın herkese açık TEST birimi
+/* AdMob (tealbirdgames, pub-9449809826221507). Test reklamı: Remote Config 'ad_test' (varsayılan açık) ya da geliştirici test modu.
+   ⚠ Mağazaya göndermeden önce RCF_DEF'te ad_test varsayılanını false yap (ya da Firebase'de ad_test=false). */
+let AD_TEST=true;
+function adTestOn(){try{return !!(cfg('ad_test')||(store.get('dev',false)&&store.get('testmode',false)));}catch(e){return true;}}
+const AD_UNITS=(window.Capacitor&&Capacitor.getPlatform&&Capacitor.getPlatform()==='ios')
+  ?{reward:'ca-app-pub-9449809826221507/7103548980',inter:'ca-app-pub-9449809826221507/5879143408',banner:'ca-app-pub-9449809826221507/1649535612'} // iOS (Vapura Yetiş iOS ~3547447351)
+  :{reward:'ca-app-pub-9449809826221507/5982039000',inter:'ca-app-pub-9449809826221507/2726366455',banner:'ca-app-pub-9449809826221507/2962617282'}; // Android (~3435766714)
 const SKU={offer:'offer_special',c500:'coins_500',c1500:'coins_1500',noads:'no_ads',starter:'welcome_pack',kmb:'simit_bank',pass:'ferry_pass',club:'captain_club'};
 let _adBusy=false,_adInit=null,_adOn=false,_lastAdAt=0;
 /* v1.40 reklam kuralları:
@@ -4964,7 +4979,7 @@ let _adBusy=false,_adInit=null,_adOn=false,_lastAdAt=0;
 const AD_TIERS={reward:[AD_UNITS.reward],inter:[AD_UNITS.inter]};
 const AD={reward:{ok:0,at:0,busy:0,fail:0,tier:-1,tm:0},inter:{ok:0,at:0,busy:0,fail:0,tier:-1,tm:0}};
 function interFrom(){return cfg('ad_inter_from');}
-function adUnits(t){const s=String(cfg(t==='reward'?'ad_reward_units':'ad_inter_units')||'');const a=s.split(',').map(x=>x.trim()).filter(x=>/^ca-app-pub-\d+\/\d+$/.test(x));return a.length?a:AD_TIERS[t];}
+function adUnits(t){const s=String(cfg((t==='reward'?'ad_reward_units':'ad_inter_units')+(IOS()?'_ios':''))||'');const a=s.split(',').map(x=>x.trim()).filter(x=>/^ca-app-pub-\d+\/\d+$/.test(x));return a.length?a:AD_TIERS[t];}
 function adFresh(t){const S=AD[t];return !!S.ok&&Date.now()-S.at<cfg('ad_refresh_min')*60e3;}
 function interWanted(){return !adFree()&&curLevel()>=interFrom()-cfg('ad_inter_prep');}
 async function adLoad(t){const A=plug('AdMob'),S=AD[t];if(!A||!_adOn)return false;if(adFresh(t))return true;if(S.busy)return S.busy;
@@ -4981,8 +4996,9 @@ function adPaid(t,d){try{d=d||{};const v=(+d.valueMicros||0)/1e6,r=store.get('ad
 function adDbg(){const r=store.get('adRev',{n:0,v:0,c:''}),f=t=>adFresh(t)?tt('hazır','ready')+' ('+(AD[t].tier+1)+'. '+tt('sıra','tier')+', '+Math.round((Date.now()-AD[t].at)/60e3)+' dk)':(AD[t].busy?tt('yükleniyor','loading'):tt('yok','none'));
   return 'RC: '+RCF_N+' '+tt('uzak değer','remote values')+' · '+tt('Ödüllü','Rewarded')+': '+f('reward')+' · '+tt('Geçiş','Interstitial')+': '+f('inter')+' · '+tt('Gelir','Revenue')+': '+r.n+' / '+r.v.toFixed(4)+' '+(r.c||'');}
 function adInit(){if(_adInit)return _adInit;const A=plug('AdMob');if(!A)return Promise.resolve(false);
-  _adInit=(async()=>{try{await A.initialize({initializeForTesting:AD_TEST});
+  _adInit=(async()=>{try{AD_TEST=adTestOn();track('ad_mode',{test:AD_TEST?1:0});await A.initialize({initializeForTesting:AD_TEST});
     try{const ci=await A.requestConsentInfo();if(ci&&ci.isConsentFormAvailable&&ci.status==='REQUIRED')await A.showConsentForm();}catch(e){}
+    if(IOS()){try{const ts=await A.trackingAuthorizationStatus();if(ts&&ts.status==='notDetermined'){const r=await A.requestTrackingAuthorization();track('att',{st:(r&&r.status)||'?'});}}catch(e){}}
     try{await A.addListener('onRewardedVideoAdImpression',d=>adPaid('reward',d));await A.addListener('interstitialAdImpression',d=>adPaid('inter',d));}catch(e){}
     try{await A.addListener('bannerAdPaid',d=>adPaid('banner',d));await A.addListener('bannerAdSizeChanged',z=>{_ban.h=Math.round(+(z&&z.height)||0);});
       await A.addListener('bannerAdLoaded',()=>{_ban.st=2;track('ad_load',{t:'banner',tier:0});});await A.addListener('bannerAdFailedToLoad',()=>{_ban.st=3;_ban.ft=Date.now();_ban.vis=false;banSpace(0);track('ad_load_fail',{t:'banner'});});}catch(e){}
@@ -5156,22 +5172,25 @@ function afterWin(L,next){try{adWarm();}catch(e){}
 // satın alma: tarayıcıda (test) direkt verir, telefonda Google Play ödeme ekranını açar
 let _iapPend=null,_iapReady=false;
 function iapStore(){const S=window.CdvPurchase;return S&&S.store?S:null;}
+function iapPF(S){return IOS()?S.Platform.APPLE_APPSTORE:S.Platform.GOOGLE_PLAY;}
+function iapRestore(){const S=iapStore();if(!S){toast(tt('Satın alma şu an kullanılamıyor','Purchases are unavailable right now'));return;}track('iap_restore',{});
+  S.store.restorePurchases().then(()=>{toast(tt('Satın alımlar kontrol edildi ✓','Purchases restored ✓'),true);try{renderMenu();}catch(e){}}).catch(()=>toast(tt('Geri yükleme tamamlanamadı','Restore failed')));}
 function iap(k,fn){if(!NATIVE()){fn();return;}const S=iapStore();
   const off=()=>{toast(tt('Satın alma şu an kullanılamıyor, biraz sonra tekrar dene','Purchases are unavailable right now, try again later'));};
-  if(!S)return off();const pr=S.store.get(SKU[k],S.Platform.GOOGLE_PLAY),o=pr&&pr.getOffer&&pr.getOffer();if(!o)return off();
+  if(!S)return off();const pr=S.store.get(SKU[k],iapPF(S)),o=pr&&pr.getOffer&&pr.getOffer();if(!o)return off();
   _iapPend={k,fn,t:Date.now()};track('iap_start',{k});
   o.order().then(r=>{if(r&&r.isError){_iapPend=null;if(r.code!==S.ErrorCode.PAYMENT_CANCELLED)toast(tt('Ödeme tamamlanamadı','Payment could not be completed'));}}).catch(()=>{_iapPend=null;});}
-function iapPrice(k,fb){try{if(!NATIVE())return fb;const S=iapStore();const pr=S&&S.store.get(SKU[k],S.Platform.GOOGLE_PLAY);const pp=pr&&pr.pricing;return pp&&pp.price?pp.price:fb;}catch(e){return fb;}}
+function iapPrice(k,fb){try{if(!NATIVE())return fb;const S=iapStore();const pr=S&&S.store.get(SKU[k],iapPF(S));const pp=pr&&pr.pricing;return pp&&pp.price?pp.price:fb;}catch(e){return fb;}}
 function iapInit(){const S=iapStore();if(!S)return;const {store:st,ProductType:PT,Platform:PF}=S;
-  st.register(Object.entries(SKU).map(([k,id])=>({id,type:k==='club'?PT.PAID_SUBSCRIPTION:k==='noads'?PT.NON_CONSUMABLE:PT.CONSUMABLE,platform:PF.GOOGLE_PLAY})));
+  st.register(Object.entries(SKU).map(([k,id])=>({id,type:k==='club'?PT.PAID_SUBSCRIPTION:k==='noads'?PT.NON_CONSUMABLE:PT.CONSUMABLE,platform:iapPF(S)})));
   st.when().approved(t=>t.verify()).verified(r=>r.finish()).finished(t=>{const ids=(t.products||[]).map(x=>x.id),P=_iapPend;
       if(P&&ids.includes(SKU[P.k])){_iapPend=null;track('purchase',{item:P.k});try{P.fn();}catch(e){errLog(e);}saveEco&&saveEco();}
       else if(ids.includes(SKU.noads)){store.set('noads',true);}else if(ids.includes(SKU.club)){store.set('clubOwned',true);}})
     .productUpdated(pr=>{if(pr.id===SKU.noads&&pr.owned&&!store.get('noads',false)){store.set('noads',true);try{renderMenu();}catch(e){}}
       if(pr.id===SKU.club){const was=!!store.get('clubOwned',false);if(pr.owned)store.set('clubOwned',true);else if(_iapReady)store.set('clubOwned',false);if(was!==!!store.get('clubOwned',false)){track('club_state',{on:store.get('clubOwned',false)?1:0});try{renderMenu();}catch(e){}}}});
-  st.ready(()=>{_iapReady=true;try{const pc=st.get(SKU.club,PF.GOOGLE_PLAY);if(pc)store.set('clubOwned',!!pc.owned);clubDaily();}catch(e){}});
+  st.ready(()=>{_iapReady=true;try{const pc=st.get(SKU.club,iapPF(S));if(pc)store.set('clubOwned',!!pc.owned);clubDaily();}catch(e){}});
   st.error(e=>errLog(e&&e.message||e));
-  st.initialize([PF.GOOGLE_PLAY]).catch(e=>errLog(e));}
+  st.initialize([iapPF(S)]).catch(e=>errLog(e));}
 /* v1.41 Kaptan Kulübü: haftalık abonelik (Google Play, ürün kimliği captain_club, temel plan haftalık).
    Avantajlar: bölüm arası + alt şerit reklam yok, her gün 150 altın + 1 Geri Al + 1 Ekstra Yer, maksimum can +2.
    Ödüllü (isteğe bağlı) reklamlar açık kalır. Telefonda üyelik Google Play'den okunur; tarayıcıda test için 7 gün açılır. */
@@ -5180,7 +5199,7 @@ function noadsGrant(){store.set('noads',true);setCoins(coins+1500,true);track('n
 function clubDaily(){if(!clubOn())return;const d=new Date().toDateString();if(store.get('clubDay','')===d)return;store.set('clubDay',d);
   setCoins(coins+CLUB.coins,true);for(const k in CLUB.boost)inv[k]=(inv[k]||0)+CLUB.boost[k];saveEco();track('club_daily',{});
   setTimeout(()=>{try{toast('⚓ '+tt('Kaptan Kulübü','Captain Club')+': +'+CLUB.coins+' 🪙 · +1 '+BOOST.undo.n+' · +1 '+BOOST.extra.n,true);}catch(e){}},600);}
-function clubManage(){const u='https://play.google.com/store/account/subscriptions?sku='+SKU.club+'&package=com.tealbirdgames.ferrytales';track('club_manage',{});
+function clubManage(){const u=IOS()?'https://apps.apple.com/account/subscriptions':'https://play.google.com/store/account/subscriptions?sku='+SKU.club+'&package=com.tealbirdgames.ferrytales';track('club_manage',{});
   if(NATIVE())location.href=u;else window.open(u,'_blank');}
 function clubCard(){const on=clubOn();return '<button class="shclub'+(on?' on':'')+'" id="shClub"><span class="sclA">⚓</span><div><b>'+tt('Kaptan Kulübü','Captain Club')+'</b><span>'+
   (on?tt('Üyesin ✓ · Her gün hediye, reklamsız','Member ✓ · Daily gifts, no ads'):tt('Reklamsız · Her gün 150 🪙 + güçlendirici','No ads · 150 🪙 + boosters every day'))+'</span></div><i class="shpb '+(on?'gd':'g')+'">'+(on?tt('Yönet','Manage'):shopPrices().club+tt('/hafta','/week'))+'</i></button>';}
@@ -5193,8 +5212,9 @@ function clubModal(back){const on=clubOn(),P=shopPrices().club;track('club_view'
     li('❤️',tt('Maksimum can +'+CLUB.lives,'+'+CLUB.lives+' max lives'))+'</ul>'+
     (on?'<p class="tnote">'+tt('Üyeliğin açık ✓ Günlük hediyen her gün ana sayfayı açınca gelir.','Your membership is active ✓ Your daily gift arrives when you open the home screen.')+'</p><div class="btns"><button class="btn" id="clMg">'+tt('Aboneliği yönet','Manage subscription')+'</button><button class="btn alt" id="clX">'+tt('Kapat','Close')+'</button></div>'
       :'<div class="btns"><button class="btn gold" id="clBuy">'+tt('Abone ol · '+P+' / hafta','Subscribe · '+P+' / week')+'</button><button class="btn alt" id="clX">'+tt('Vazgeç','No thanks')+'</button></div>'+
-       '<p class="clfine">'+tt('Haftalık abonelik: iptal edene kadar her hafta '+P+' Google Play hesabından otomatik olarak yenilenir. İstediğin zaman Google Play › Ödemeler ve abonelikler bölümünden iptal edebilirsin; iptal edersen haftanın sonuna kadar avantajların sürer. İsteğe bağlı ödüllü reklamlar açık kalır.',
-         'Weekly subscription: renews automatically every week at '+P+' through your Google Play account until you cancel. Cancel anytime in Google Play › Payments & subscriptions; benefits stay until the end of the paid week. Optional rewarded ads stay available.')+'</p>'));
+       '<p class="clfine">'+(IOS()?tt('Haftalık abonelik: iptal edene kadar her hafta '+P+' Apple ID hesabından otomatik olarak yenilenir. Dönem bitmeden en az 24 saat önce iptal etmezsen yenilenir. Ayarlar › Apple ID › Abonelikler bölümünden istediğin zaman iptal edebilirsin. İsteğe bağlı ödüllü reklamlar açık kalır.','Weekly subscription: renews automatically every week at '+P+' through your Apple ID until you cancel. It renews unless cancelled at least 24 hours before the end of the period. Cancel anytime in Settings › Apple ID › Subscriptions. Optional rewarded ads stay available.')+' <a href="https://tealbirdgames.com/gizlilik/" target="_blank">'+tt('Gizlilik','Privacy')+'</a> · <a href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/" target="_blank">'+tt('Kullanım Koşulları','Terms of Use')+'</a></p>'
+       :tt('Haftalık abonelik: iptal edene kadar her hafta '+P+' Google Play hesabından otomatik olarak yenilenir. İstediğin zaman Google Play › Ödemeler ve abonelikler bölümünden iptal edebilirsin; iptal edersen haftanın sonuna kadar avantajların sürer. İsteğe bağlı ödüllü reklamlar açık kalır.',
+         'Weekly subscription: renews automatically every week at '+P+' through your Google Play account until you cancel. Cancel anytime in Google Play › Payments & subscriptions; benefits stay until the end of the paid week. Optional rewarded ads stay available.')+'</p>')));
   const x=()=>{hideModal();if(back)back();};$('clX').onclick=()=>{sfx.tap();x();};
   if($('clMg'))$('clMg').onclick=()=>{sfx.tap();clubManage();};
   if($('clBuy'))$('clBuy').onclick=()=>{sfx.tap();iap('club',()=>{if(NATIVE())store.set('clubOwned',true);else store.set('clubUntil',Date.now()+7*864e5);
@@ -5208,7 +5228,24 @@ function backBtn(){try{
   if(!mOn){if(G&&!G.busy&&!G.over){openMenu();return;}return;}
   if(menuTab!=='home'){const b=document.querySelector('[data-t="home"]');if(b){b.click();return;}}
   const A=plug('App');A&&A.minimizeApp&&A.minimizeApp();}catch(e){errLog(e);}}
+/* v1.46 Canlı güncelleme (Apple/Google onayı beklemeden): oyunun kodu ve görselleri tealbirdgames.com/ota/ferrytales'den
+   güncellenir. Uygulama açılınca manifest kontrol edilir, sadece değişen dosyalar indirilir, oyuncu uygulamadan çıkıp dönünce yeni sürüm açılır.
+   Yeni yerel eklenti gerektiren değişiklikler için manifestte native_min_ios / native_min_android (derleme numarası) yükseltilir. */
+const WEB_VER='1.46.0';
+const OTA_BASE='https://tealbirdgames.com/ota/ferrytales/';
+function verGT(a,b){const x=String(a).split('.').map(Number),y=String(b).split('.').map(Number);for(let i=0;i<3;i++){if((x[i]||0)>(y[i]||0))return true;if((x[i]||0)<(y[i]||0))return false;}return false;}
+async function otaCheck(){const U=plug('CapacitorUpdater');if(!U)return;
+  try{await U.notifyAppReady();}catch(e){}
+  try{if(cfg('ota_on')===false)return;
+    const r=await fetch(OTA_BASE+'manifest.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const m=await r.json();
+    if(!m||!m.version||!Array.isArray(m.files)||!verGT(m.version,WEB_VER))return;
+    try{const A=plug('App'),inf=A&&A.getInfo?await A.getInfo():null,bn=parseInt(inf&&inf.build)||0,need=IOS()?m.native_min_ios:m.native_min_android;if(need&&bn<need){track('ota_skip',{v:m.version,bn});return;}}catch(e){}
+    const L=await U.list().catch(()=>({bundles:[]}));let b=(L.bundles||[]).find(x=>x.version===m.version&&x.status==='success');
+    if(!b){track('ota_dl',{v:m.version});b=await U.download({url:OTA_BASE+'manifest.json',version:m.version,manifest:m.files});}
+    await U.next({id:b.id});track('ota_ready',{v:m.version});}catch(e){errLog(e);track('ota_fail',{});}}
 function nativeBoot(){if(!NATIVE())return;document.documentElement.classList.add('nat');
+  try{const U=plug('CapacitorUpdater');U&&U.notifyAppReady&&U.notifyAppReady().catch(()=>{});}catch(e){}
+  setTimeout(()=>{otaCheck();},6000);
   try{const SB=plug('StatusBar');if(SB){SB.setOverlaysWebView&&SB.setOverlaysWebView({overlay:true}).catch(()=>{});SB.hide&&SB.hide().catch(()=>{});}}catch(e){}
   try{const A=plug('App');if(A&&A.addListener)A.addListener('backButton',backBtn);}catch(e){}
   try{rcfgInit();}catch(e){}
