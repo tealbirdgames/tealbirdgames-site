@@ -618,6 +618,9 @@ header .coin{background:rgba(255,248,235,.92)!important;color:#5a3a19!important;
 .mtabs button i{font-style:normal;display:block;height:30px}
 .mtabs button.tplay{display:none!important}
 #modal,.chlb,.pscroll,.rscroll,.stbl,.tab{overflow-x:hidden!important;overscroll-behavior-x:none}
+/* v1.46 iPhone: ana sayfa sahnesi üst güvenli alanın altına da uzansın (çentikli telefonlarda üstte boş şerit kalmasın); banner altındaki şerit beyaz */
+#menu.homeV #tab-home{overflow:visible!important}
+html.banon,html.banon body{background:#fff}
 .mtabs button i img{height:30px;width:auto;filter:drop-shadow(0 2px 1px rgba(0,0,0,.2))}
 .hv{display:flex;flex-direction:column;align-items:center;min-height:100%;padding:6px 12px 10px;box-sizing:border-box}
 .hlogo{position:relative;width:min(70%,300px);margin-top:calc(var(--sat,env(safe-area-inset-top)) + 46px)}
@@ -5008,7 +5011,7 @@ function adInit(){if(_adInit)return _adInit;const A=plug('AdMob');if(!A)return P
 /* v1.40 alt banner reklam: sadece bölüm oynanırken ve ban_from. bölümden sonra. Pencere (kazanma, bölüm öncesi...) açıkken gizlenir,
    menüde yok, reklamsız alanlarda hiç yok. Banner yüklenince oyun ekranı onun boyu kadar kısalır, böylece hiçbir düğmenin üstüne binmez. */
 const _ban={st:0,h:0,vis:false,ft:0};
-function banSpace(h){document.documentElement.style.setProperty('--banh',(h||0)+'px');}
+function banSpace(h){document.documentElement.style.setProperty('--banh',(h||0)+'px');document.documentElement.classList.toggle('banon',!!h);}
 function banWant(){return cfg('ban_on')&&!adFree()&&curLevel()>=cfg('ban_from')&&!!G&&!$('menu').classList.contains('show');}
 async function banTick(){const A=plug('AdMob');if(!A||!_adOn)return;try{
   const w=banWant(),show=w&&!$('modal').classList.contains('show');
