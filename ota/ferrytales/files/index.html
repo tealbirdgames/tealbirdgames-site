@@ -84,6 +84,10 @@ header{flex:none;display:flex;align-items:center;gap:10px;padding:calc(var(--sat
 
 #toast{position:absolute;left:50%;top:calc(var(--sat,env(safe-area-inset-top)) + 66px);transform:translate(-50%,-10px);background:#d7263d;color:#fff;font-weight:800;font-size:14px;padding:8px 14px;border-radius:12px;opacity:0;transition:.2s;z-index:8;pointer-events:none;white-space:nowrap}
 #toast.show{opacity:1;transform:translate(-50%,0)}
+/* v1.52.3: satın alma butonlarına basış hissi */
+#tab-shop .shc,#tab-shop .shoffer,#tab-shop #shClub,#tab-shop #shStart,#tab-shop #shKmb,.modal .btn.gold{transition:transform .08s ease,filter .08s ease}
+#tab-shop .shc:active,#tab-shop .shoffer:active,#tab-shop #shClub:active,#tab-shop #shStart:active,#tab-shop #shKmb:active{transform:scale(.95);filter:brightness(.9)}
+.modal .btn.gold:active{transform:scale(.95) translateY(2px);filter:brightness(.92)}
 #toast{z-index:9999!important;max-width:calc(100% - 28px);white-space:normal!important;text-align:center;width:max-content}/* v1.52.2: uyarılar menü/dükkân ekranının üstünde görünsün */
 #toast.good{background:#1f9d57}
 
@@ -5220,7 +5224,7 @@ function iapRestore(){const S=iapStore();if(!S){toast(tt('Satın alma şu an kul
 function iap(k,fn){if(!NATIVE()){fn();return;}const S=iapStore();
   const off=c=>{track('iap_off',{k,c});errLog('iap off '+k+' kod '+c);toast(tt('Satın alma şu an açılamadı','Purchase could not start')+' (kod '+c+')');};
   try{if(!S)return off(1);let pr=null;try{pr=S.store.get(SKU[k],iapPF(S));}catch(e){errLog(e);}const o=pr&&pr.getOffer&&pr.getOffer();if(!o)return off(_iapReady?2:3);
-  _iapPend={k,fn,t:Date.now()};track('iap_start',{k});
+  _iapPend={k,fn,t:Date.now()};track('iap_start',{k});try{buzz(25);sfx.tap();}catch(_){}toast(tt('Ödeme ekranı açılıyor…','Opening payment…'),true);
   o.order().then(r=>{if(r&&r.isError){_iapPend=null;if(r.code!==S.ErrorCode.PAYMENT_CANCELLED){errLog('iap order '+r.code+' '+r.message);toast(tt('Ödeme tamamlanamadı','Payment could not be completed')+' ('+r.code+')');}}}).catch(e=>{_iapPend=null;errLog(e);toast(tt('Ödeme tamamlanamadı','Payment could not be completed'));});
   }catch(e){errLog(e);off(4);}}
 function iapPrice(k,fb){try{if(!NATIVE())return fb;const S=iapStore();const pr=S&&S.store.get(SKU[k],iapPF(S));const pp=pr&&pr.pricing;return pp&&pp.price?pp.price:fb;}catch(e){return fb;}}
@@ -5274,7 +5278,7 @@ function backBtn(){try{
 /* v1.46 Canlı güncelleme (Apple/Google onayı beklemeden): oyunun kodu ve görselleri tealbirdgames.com/ota/ferrytales'den
    güncellenir. Uygulama açılınca manifest kontrol edilir, sadece değişen dosyalar indirilir, oyuncu uygulamadan çıkıp dönünce yeni sürüm açılır.
    Yeni yerel eklenti gerektiren değişiklikler için manifestte native_min_ios / native_min_android (derleme numarası) yükseltilir. */
-const WEB_VER='1.52.2';
+const WEB_VER='1.52.3';
 const OTA_BASE='https://tealbirdgames.com/ota/ferrytales/';
 function verGT(a,b){const x=String(a).split('.').map(Number),y=String(b).split('.').map(Number);for(let i=0;i<3;i++){if((x[i]||0)>(y[i]||0))return true;if((x[i]||0)<(y[i]||0))return false;}return false;}
 async function otaCheck(){const U=plug('CapacitorUpdater');if(!U)return;
