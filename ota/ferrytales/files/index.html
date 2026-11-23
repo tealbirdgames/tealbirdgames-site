@@ -2004,6 +2004,8 @@ body.kis #sea.ven.sunset::before{background:linear-gradient(rgba(140,160,215,.24
 @keyframes tpB{50%{transform:translateX(-50%) scale(1.05)}}
 
 /* v1.11 kilit-anahtar eşleşmesi */
+.kfly{position:absolute;z-index:400;pointer-events:none}.kfly img{width:100%;height:100%;object-fit:contain;display:block}
+
 .fig .lkb .lkn,.fig .kyb .lkn{position:absolute;left:-26%;bottom:-24%;min-width:58%;height:58%;padding:0 2px;border-radius:999px;background:var(--pc,#f5c518);color:#3a2408;font:900 calc(var(--s,44px)*.22)/1 'Baloo 2',system-ui;display:grid;place-items:center;border:1.5px solid #fff;box-shadow:0 1px 2px rgba(0,0,0,.35)}
 .fig .p1 .lkn{color:#1f2a33}.fig .p2 .lkn{color:#fff}
 .fig.kyhl{animation:kyhl .5s ease-in-out 3}
@@ -2679,9 +2681,31 @@ function reveal(i,f){if(G.hidden.has(i)){G.hidden.delete(i);f.classList.remove('
 function cafeUI(){if(!G||!G.cafe)return;for(const k in G.cafe){const i=+k,f=figs[i];if(!f)continue;const n=cafeLeft(G.cells,i);let b=f.querySelector('.cfb');
   if(n>0){if(!b){f.classList.add('cafe');f.insertAdjacentHTML('beforeend','<i class="cft"></i><i class="cfb"><span>☕</span><b>'+n+'</b></i>');}else{const t=b.querySelector('b');if(t.textContent!==String(n)){t.textContent=n;try{b.animate([{scale:'1.35'},{scale:'1'}],{duration:260,easing:'ease-out'});}catch(e){}}}}
   else if(b){f.classList.remove('cafe');f.querySelectorAll('.cfb,.cft').forEach(e=>e.remove());f.classList.add('rev');setTimeout(()=>f.classList.remove('rev'),400);try{[660,990].forEach((q,k)=>tone(q,.1,'triangle',.08,0,k*.07));}catch(e){}}}}
+/* v1.52 anahtar kilide uçar: parlar, kilide gider, döner, kilit açılır */
+const KEYPOS={};
+function lockOpenNow(f){f.classList.remove('lockd');delete f.dataset.unl;f.querySelectorAll('.lkb,.chn').forEach(e=>e.remove());f.classList.add('rev');setTimeout(()=>f.classList.remove('rev'),400);try{sfx.unlock();}catch(e){[880,1320].forEach((q,k)=>tone(q,.12,'triangle',.1,0,k*.08));}toast(_t('🔓 Kilit açıldı!'),true);}
+function keyFly(lk,f){f.dataset.unl='1';const ky=G.locks[lk];
+  try{const lb=f.querySelector('.lkb');const sr={x:0,y:0};let A=KEYPOS[ky];delete KEYPOS[ky];const kf=figs[ky],kb=(A&&A.el)||(kf&&kf.isConnected&&kf.querySelector('.kyb'));if(kb){if(!A){const r=relRect(kb);if(r.w>0)A=r;}kb.remove();}
+    if(!A){const t=gridEl.children[ky];if(t){const r=relRect(t);A={x:r.x+r.w*.6,y:r.y,w:r.w*.45,h:r.w*.45};}}
+    if(!lb||!A||G.auto){lockOpenNow(f);return;}
+    const B=relRect(lb),sz=Math.max(26,B.w*1.5),x1=A.x-sr.x+A.w/2,y1=A.y-sr.y+A.h/2,x2=B.x-sr.x+B.w/2,y2=B.y-sr.y+B.h/2;
+    const k=document.createElement('div');k.className='kfly';k.style.cssText='left:'+(x1-sz/2)+'px;top:'+(y1-sz/2)+'px;width:'+sz+'px;height:'+sz+'px';k.innerHTML='<img src="assets/b_key.webp" alt="">';app.appendChild(k);
+    const dx=x2-x1,dy=y2-y1,lift=Math.min(70,30+Math.hypot(dx,dy)*.18);
+    k.animate([{transform:'translate(0,0) scale(.7) rotate(0deg)',filter:'drop-shadow(0 0 0 #ffd84d)'},
+      {transform:'translate(0,-8px) scale(1.35) rotate(-12deg)',filter:'drop-shadow(0 0 10px #ffe680) brightness(1.35)',offset:.22},
+      {transform:'translate('+dx*.5+'px,'+(dy*.5-lift)+'px) scale(1.15) rotate(-30deg)',filter:'drop-shadow(0 0 8px #ffd84d) brightness(1.2)',offset:.62},
+      {transform:'translate('+dx+'px,'+dy+'px) scale(.9) rotate(-45deg)',filter:'drop-shadow(0 0 6px #ffd84d)',offset:.86},
+      {transform:'translate('+dx+'px,'+dy+'px) scale(.9) rotate(45deg)',filter:'drop-shadow(0 0 12px #fff3a0) brightness(1.4)'}],{duration:820,easing:'cubic-bezier(.45,0,.3,1)',fill:'forwards'});
+    try{tone(1180,.08,'sine',.05);tone(1560,.1,'sine',.05,0,.12);}catch(e){}
+    setTimeout(()=>{try{lb.animate([{transform:'scale(1) rotate(0)'},{transform:'scale(1.45) rotate(-14deg)',offset:.4},{transform:'scale(1.6) rotate(10deg) translateY(-6px)',opacity:1,offset:.7},{transform:'scale(1.8) translateY(-14px)',opacity:0}],{duration:420,easing:'ease-out',fill:'forwards'});
+      const c=f.querySelector('.chn');if(c)c.animate([{opacity:1},{opacity:0,transform:'scale(1.2)'}],{duration:380,fill:'forwards'});
+      const fr=relRect(f);for(let j=0;j<8;j++){const p=document.createElement('i');p.className='spk2';p.style.left=(x2+sr.x)+'px';p.style.top=(y2+sr.y)+'px';app.appendChild(p);const an=j/8*Math.PI*2,d=22+Math.random()*16;p.animate([{transform:'translate(-50%,-50%) scale(1)',opacity:1},{transform:'translate(calc(-50% + '+Math.cos(an)*d+'px),calc(-50% + '+Math.sin(an)*d+'px)) scale(.2)',opacity:0}],{duration:460,easing:'cubic-bezier(.2,.7,.4,1)',fill:'forwards'});setTimeout(()=>p.remove(),500);}}catch(e){}
+      k.animate([{opacity:1},{opacity:0,transform:'translate('+dx+'px,'+dy+'px) scale(1.3) rotate(45deg)'}],{duration:260,fill:'forwards'});setTimeout(()=>k.remove(),280);},800);
+    setTimeout(()=>{if(f.isConnected)lockOpenNow(f);else delete f.dataset.unl;},1180);
+  }catch(e){lockOpenNow(f);}}
 function updateReach(){
   const ok=new Set(reachable(G.cells,G.rows,G.cols));[...ok].forEach(i=>{const p=famP(i);if(p>=0&&!isLocked(G.cells,p,G.locks))ok.add(p);});
-  for(const i in figs){const f=figs[i];if(f.classList.contains('lockd')&&!isLocked(G.cells,+i,G.locks)){f.classList.remove('lockd');f.querySelectorAll('.lkb,.chn').forEach(e=>e.remove());f.classList.add('rev');setTimeout(()=>f.classList.remove('rev'),400);[880,1320].forEach((q,k)=>tone(q,.12,'triangle',.1,0,k*.08));toast(_t('🔓 Kilit açıldı!'),true);}
+  for(const i in figs){const f=figs[i];if(f.classList.contains('lockd')&&!isLocked(G.cells,+i,G.locks)&&!f.dataset.unl){keyFly(+i,f);}
     const on=ok.has(+i);if(on)reveal(+i,f);f.classList.toggle('ok',on);f.classList.toggle('blk',!on);}
   {const used=G.bench.filter(b=>b!=null).length,tot=G.bench.length,bw=$('benchwrap');bw.classList.toggle('full',used>=tot);bw.classList.toggle('warn',used===tot-1&&tot>1);const bc=$('bcnt');if(bc)bc.innerHTML=_t('Bekleme alanı ')+'<b>'+used+'/'+tot+'</b>';}
   {const tl=gridEl.children;for(let j=0;j<G.cells.length;j++){const t=tl[j];if(!t||G.cells[j]<=-2)continue;t.classList.toggle('emp',G.cells[j]<0);t.classList.toggle('rc',G.cells[j]>=0&&ok.has(j)&&!(figs[j]&&figs[j].classList.contains('lockd')));}}
@@ -2917,7 +2941,7 @@ async function onTap0(i){
   if(!DEP&&G&&G.busy&&!G.over&&!G.auto&&!T){G.qTap={i,t:Date.now()};return;}/* v1.46: animasyon sürerken gelen dokunuş kaybolmaz, hemen ardından işlenir */
   if(!G||(G.busy&&!DEP)||G.over)return;
   const col=G.cells[i];if(col==null||col<0)return;
-  const fig=figs[i];
+  const fig=figs[i];try{const kb=fig&&fig.querySelector('.kyb');if(kb){const r=relRect(kb);r.el=kb;KEYPOS[i]=r;}}catch(_){}
   if(T&&T.steps[T.idx]&&T.steps[T.idx].mode==='ok'){tutNext();}
   if(tutBlocks(i)){shake(fig);if(T&&T.steps[T.idx]&&T.steps[T.idx].mode==='ok'){const b=$('cok');if(b){b.classList.remove('nudge');void b.offsetWidth;b.classList.add('nudge');}}else toast(tt('Parlayan yolcuya dokun 👆','Tap the glowing passenger 👆'));return;}
   const ok=new Set(reachable(G.cells,G.rows,G.cols)),p=famP(i);
@@ -4915,7 +4939,7 @@ function banner(L){
 }
 
 /* olaylar */
-function pickFig(e){if(!G||G.over)return -1;const a=app.getBoundingClientRect(),x=e.clientX-a.left,y=e.clientY-a.top,R=cs*.95;let best=-1,bd=1e9,bok=-1,bdo=1e9;
+function pickFig(e){if(!G||G.over)return -1;try{const el=document.elementFromPoint(e.clientX,e.clientY),hf=el&&el.closest&&el.closest('.fig');if(hf&&hf.dataset.i!=null){const hk=+hf.dataset.i;if(figs[hk]===hf&&hf.classList.contains('ok')&&!hf.classList.contains('lockd'))return hk;}}catch(_){}const a=app.getBoundingClientRect(),x=e.clientX-a.left,y=e.clientY-a.top,R=cs*.95;let best=-1,bd=1e9,bok=-1,bdo=1e9;
   for(const k in figs){const f=figs[k];if(!f||f.dataset.i==null)continue;const c=cellCenter(+k),d=Math.hypot(c.x-x,(c.y+cs*.12)-y);if(d>R)continue;if(d<bd){bd=d;best=+k;}if(f.classList.contains('ok')&&!f.classList.contains('lockd')&&d<bdo){bdo=d;bok=+k;}}
   return bok>=0&&bdo<R?bok:best;}
 function tapAt(e){if(!G||G.busy||G.over)return;if(gondHit(e))return;const i=pickFig(e);if(i<0)return;e.preventDefault();ac();onTap(i);}
@@ -5248,7 +5272,7 @@ function backBtn(){try{
 /* v1.46 Canlı güncelleme (Apple/Google onayı beklemeden): oyunun kodu ve görselleri tealbirdgames.com/ota/ferrytales'den
    güncellenir. Uygulama açılınca manifest kontrol edilir, sadece değişen dosyalar indirilir, oyuncu uygulamadan çıkıp dönünce yeni sürüm açılır.
    Yeni yerel eklenti gerektiren değişiklikler için manifestte native_min_ios / native_min_android (derleme numarası) yükseltilir. */
-const WEB_VER='1.51.1';
+const WEB_VER='1.52.0';
 const OTA_BASE='https://tealbirdgames.com/ota/ferrytales/';
 function verGT(a,b){const x=String(a).split('.').map(Number),y=String(b).split('.').map(Number);for(let i=0;i<3;i++){if((x[i]||0)>(y[i]||0))return true;if((x[i]||0)<(y[i]||0))return false;}return false;}
 async function otaCheck(){const U=plug('CapacitorUpdater');if(!U)return;
