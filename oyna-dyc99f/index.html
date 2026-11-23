@@ -2901,7 +2901,7 @@ function bootPreload(){const sp=$('splash');if(!sp)return;const t0=Date.now();
 // açılıştan sonra sık kullanılan görselleri sessizce ısıt (yolcular, vapurlar, ödül ikonları)
 function warmAssets(){const L=[];sprLoad();PCN.forEach(c=>{L.push('assets/v4_'+c+'.webp');});
   ['ui_star','ui_coin','ui_heart','u_undo','u_extra','u_magnet','u_undo2','u_extra2','u_magnet2','r_chest','r_chestopen','s_coins','s_sack','s_chest','s_noads','s_gift'].forEach(n=>L.push('assets/'+n+'.webp'));
-  ['r_ocean1','r_ocean2','r_ocean3'].forEach(n=>L.push('assets/'+kisA(n)+'.webp?v=66'));L.push('assets/'+kisA('w_map')+'.webp?v=2');
+  {const ck=RCK[cityOfLevel(Math.min(curLevel(),MAXL))]||'';['r_ocean1','r_ocean2','r_ocean3'].forEach(n=>L.push('assets/'+kisA(n+(ck?'_'+ck:''))+'.webp?v=67'));}L.push('assets/'+kisA('w_map')+'.webp?v=2');
   if(curLevel()>=28)['bg_top_ven','bg_edge_ven','bg_planks_ven'].forEach(n=>L.push('assets/'+kisA(n)+'.webp'));if(curLevel()>=28&&skinCur==='classic')PCN.forEach(c=>L.push('assets/'+cbPre()+'vap_'+c+'.webp'));if(curLevel()>=58)['bg_top_ams','bg_edge_ams','bg_planks_ams'].forEach(n=>L.push('assets/'+kisA(n)+'.webp'));if(curLevel()>=58&&skinCur==='classic')PCN.forEach(c=>L.push('assets/'+cbPre()+'ams_'+c+'.webp'));if(curLevel()>=88&&LIVE>3)['bg_top_par','bg_edge_par','bg_planks_par'].forEach(n=>L.push('assets/'+kisA(n)+'.webp'));if(curLevel()>=88&&LIVE>3&&skinCur==='classic')PCN.forEach(c=>L.push('assets/'+cbPre()+'par_'+c+'.webp'));
   let i=0;const next=()=>{if(i>=L.length)return;const u=L[i++];loadImg(u).then(()=>setTimeout(next,15));};for(let k=0;k<4;k++)next();}
 function snapshot(){G.hist.push({cells:G.cells.slice(),bench:G.bench.slice(),fi:G.fi,load:G.load});if(G.hist.length>30)G.hist.shift();}
@@ -3838,6 +3838,8 @@ function islandSVG(x,y,s,kind,id,ven){
 const RT=[[.375,.933],[.266,.907],[.219,.863],[.234,.837],[.258,.811],[.359,.767],[.469,.724],[.539,.68],[.555,.645],[.516,.61],[.453,.575],[.422,.541],[.469,.514],[.562,.488],[.602,.462],[.562,.436],[.484,.41],[.445,.384],[.469,.357],[.547,.323],[.586,.296],[.531,.27],[.445,.244],[.414,.218],[.469,.187],[.547,.166],[.602,.144],[.594,.122],[.555,.109]];
 const RPAD=[[.41,.90],[.73,.76],[.32,.68],[.69,.57],[.31,.46],[.72,.38],[.32,.31],[.70,.24],[.32,.17],[.55,.09]];
 const RDK=[[.27,.905],[.64,.80],[.41,.71],[.60,.60],[.40,.485],[.65,.415],[.395,.34],[.63,.27],[.40,.20],[.53,.12]];
+/* v1.50: her şehrin yol haritası kendi binalarıyla (ada/iskele yerleşimi aynı) */
+const RCK=['ist','ven','ams','par'];
 function renderRoad(){
   const L0=Math.min(curLevel(),MAXL+1),bl0=gateBlocked(L0),RL0=Math.min(MAXL,bl0?L0-1:L0),curCi=cityOfLevel(RL0);
   /* v1.48: geçmiş şehirlerin yol haritası görüntülenebilir (yıldız kontrolü, tekrar oynama) */
@@ -3851,7 +3853,7 @@ function renderRoad(){
   const dock=k=>{const s=Math.floor(k/10),j=k%10;if(s===2&&j===9)return P(s,[.50,.135]);if(j===0)return P(s,s===1?[.63,.935]:[.29,.915]);const a=RPAD[j],b=RDK[j];return P(s,[a[0]+(b[0]-a[0])*1.35,a[1]+(b[1]-a[1])*1.35]);};
   const route=[];for(let s=0;s<3;s++)RT.forEach(p=>route.push(P(s,p)));
   let bg='';
-  for(let s=0;s<3;s++)bg+='<img class="rsec" src="assets/'+kisA('r_ocean'+(s+1))+'.webp?v=66" style="top:'+sTop(s)+'px;height:'+(SH+1)+'px" alt="">';
+  for(let s=0;s<3;s++)bg+='<img class="rsec" src="assets/'+kisA('r_ocean'+(s+1)+(RCK[ci]?'_'+RCK[ci]:''))+'.webp?v=67" style="top:'+sTop(s)+'px;height:'+(SH+1)+'px" alt="">';
   
   let fx='';
   for(let k=0;k<44;k++){const sx=((k*97)%(SW-20))+10,sy=H-40-k*(H/46);fx+='<i class="rspk" style="left:'+sx+'px;top:'+sy+'px;animation-delay:'+((k*.53)%3).toFixed(2)+'s"></i>';}
@@ -5246,7 +5248,7 @@ function backBtn(){try{
 /* v1.46 Canlı güncelleme (Apple/Google onayı beklemeden): oyunun kodu ve görselleri tealbirdgames.com/ota/ferrytales'den
    güncellenir. Uygulama açılınca manifest kontrol edilir, sadece değişen dosyalar indirilir, oyuncu uygulamadan çıkıp dönünce yeni sürüm açılır.
    Yeni yerel eklenti gerektiren değişiklikler için manifestte native_min_ios / native_min_android (derleme numarası) yükseltilir. */
-const WEB_VER='1.49.0';
+const WEB_VER='1.50.0';
 const OTA_BASE='https://tealbirdgames.com/ota/ferrytales/';
 function verGT(a,b){const x=String(a).split('.').map(Number),y=String(b).split('.').map(Number);for(let i=0;i<3;i++){if((x[i]||0)>(y[i]||0))return true;if((x[i]||0)<(y[i]||0))return false;}return false;}
 async function otaCheck(){const U=plug('CapacitorUpdater');if(!U)return;
