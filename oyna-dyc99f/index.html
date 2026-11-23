@@ -1046,8 +1046,9 @@ body,button,input,textarea{line-height:1.2}
 .wfog{position:absolute;width:40%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;-webkit-backdrop-filter:grayscale(.85) brightness(.92) blur(1px);backdrop-filter:grayscale(.85) brightness(.92) blur(1px);-webkit-mask:radial-gradient(circle,#000 45%,transparent 70%);mask:radial-gradient(circle,#000 45%,transparent 70%);pointer-events:none}
 .wferry{left:auto!important;right:-14%!important;bottom:18px!important;width:40%!important}
 .wfog{width:56%!important;-webkit-backdrop-filter:grayscale(.75) brightness(.96)!important;backdrop-filter:grayscale(.75) brightness(.96)!important;-webkit-mask:radial-gradient(circle,#000 22%,rgba(0,0,0,.6) 45%,transparent 70%)!important;mask:radial-gradient(circle,#000 22%,rgba(0,0,0,.6) 45%,transparent 70%)!important}
-.wferry2{position:absolute;width:17%;transform:translate(-50%,-70%);z-index:3;pointer-events:none;filter:drop-shadow(0 4px 3px rgba(0,40,60,.35));animation:wbob 2.4s ease-in-out infinite}
-@keyframes wbob{0%,100%{transform:translate(-50%,-70%) rotate(-2deg)}50%{transform:translate(-50%,-76%) rotate(2deg)}}
+.wferry2{position:absolute;width:17%;transform:translate(-50%,-70%);z-index:3;pointer-events:none;filter:drop-shadow(0 4px 3px rgba(0,40,60,.35));animation:wfbob 2.6s ease-in-out infinite}
+/* v1.49: aynı adlı ikinci wbob tanımı bu animasyonu ezip vapuru zıplatıyordu; ayrı ad */
+@keyframes wfbob{0%,100%{transform:translate(-50%,-70%) rotate(-1.5deg)}50%{transform:translate(-50%,-73%) rotate(1.5deg)}}
 .wwake{position:absolute;width:15%;height:2.2%;transform:translate(-50%,-10%);border-radius:50%;background:radial-gradient(ellipse,rgba(255,255,255,.75),rgba(255,255,255,0) 70%);z-index:2;pointer-events:none;animation:wwk 2.4s ease-in-out infinite}
 @keyframes wwk{50%{transform:translate(-50%,-10%) scale(1.25);opacity:.6}}
 
@@ -5245,7 +5246,7 @@ function backBtn(){try{
 /* v1.46 Canlı güncelleme (Apple/Google onayı beklemeden): oyunun kodu ve görselleri tealbirdgames.com/ota/ferrytales'den
    güncellenir. Uygulama açılınca manifest kontrol edilir, sadece değişen dosyalar indirilir, oyuncu uygulamadan çıkıp dönünce yeni sürüm açılır.
    Yeni yerel eklenti gerektiren değişiklikler için manifestte native_min_ios / native_min_android (derleme numarası) yükseltilir. */
-const WEB_VER='1.48.0';
+const WEB_VER='1.49.0';
 const OTA_BASE='https://tealbirdgames.com/ota/ferrytales/';
 function verGT(a,b){const x=String(a).split('.').map(Number),y=String(b).split('.').map(Number);for(let i=0;i<3;i++){if((x[i]||0)>(y[i]||0))return true;if((x[i]||0)<(y[i]||0))return false;}return false;}
 async function otaCheck(){const U=plug('CapacitorUpdater');if(!U)return;
