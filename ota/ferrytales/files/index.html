@@ -1896,7 +1896,7 @@ body.kis #sea.sunset::before{background:linear-gradient(rgba(140,160,215,.24),rg
 @keyframes tbPop{0%{opacity:0;transform:scale(.6)}100%{opacity:1;transform:scale(1)}}
 @keyframes tbSpark{0%{opacity:0;transform:scale(.2) rotate(0)}40%{opacity:1;transform:scale(1.15) rotate(45deg)}100%{opacity:0;transform:scale(.4) rotate(90deg)}}
 @media (prefers-reduced-motion:reduce){#studio.go .tbb,#studio.go .tbb img,#studio.go .tbt,#studio.go .tbsh{animation:tbPop .3s both}}
-html.nat .tnote{display:none}
+html.nat .tnote,html.nat .snote{display:none}
 #splash{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 35%,#3a8fd0,#165a92 55%,#0b3560);transition:opacity .45s ease}
 #splash.out{opacity:0;pointer-events:none}
 #splash .spi{text-align:center;color:#fff;font-family:'Baloo 2','Fredoka',system-ui,sans-serif}
@@ -5227,7 +5227,7 @@ function clubModal(back){const on=clubOn(),P=shopPrices().club;track('club_view'
     li('🪙',tt('Her gün '+CLUB.coins+' altın','150 coins every day'))+
     li('🎁',tt('Her gün 1 '+BOOST.undo.n+' + 1 '+BOOST.extra.n,'1 '+BOOST.undo.n+' + 1 '+BOOST.extra.n+' every day'))+
     li('❤️',tt('Maksimum can +'+CLUB.lives,'+'+CLUB.lives+' max lives'))+'</ul>'+
-    (on?'<p class="tnote">'+tt('Üyeliğin açık ✓ Günlük hediyen her gün ana sayfayı açınca gelir.','Your membership is active ✓ Your daily gift arrives when you open the home screen.')+'</p><div class="btns"><button class="btn" id="clMg">'+tt('Aboneliği yönet','Manage subscription')+'</button><button class="btn alt" id="clX">'+tt('Kapat','Close')+'</button></div>'
+    (on?'<p class="note">'+tt('Üyeliğin açık ✓ Günlük hediyen her gün ana sayfayı açınca gelir.','Your membership is active ✓ Your daily gift arrives when you open the home screen.')+'</p><div class="btns"><button class="btn" id="clMg">'+tt('Aboneliği yönet','Manage subscription')+'</button><button class="btn alt" id="clX">'+tt('Kapat','Close')+'</button></div>'
       :'<div class="btns"><button class="btn gold" id="clBuy">'+tt('Abone ol · '+P+' / hafta','Subscribe · '+P+' / week')+'</button><button class="btn alt" id="clX">'+tt('Vazgeç','No thanks')+'</button></div>'+
        '<p class="clfine">'+(IOS()?tt('Haftalık abonelik: iptal edene kadar her hafta '+P+' Apple ID hesabından otomatik olarak yenilenir. Dönem bitmeden en az 24 saat önce iptal etmezsen yenilenir. Ayarlar › Apple ID › Abonelikler bölümünden istediğin zaman iptal edebilirsin. İsteğe bağlı ödüllü reklamlar açık kalır.','Weekly subscription: renews automatically every week at '+P+' through your Apple ID until you cancel. It renews unless cancelled at least 24 hours before the end of the period. Cancel anytime in Settings › Apple ID › Subscriptions. Optional rewarded ads stay available.')+' <a href="https://tealbirdgames.com/gizlilik/" target="_blank">'+tt('Gizlilik','Privacy')+'</a> · <a href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/" target="_blank">'+tt('Kullanım Koşulları','Terms of Use')+'</a></p>'
        :tt('Haftalık abonelik: iptal edene kadar her hafta '+P+' Google Play hesabından otomatik olarak yenilenir. İstediğin zaman Google Play › Ödemeler ve abonelikler bölümünden iptal edebilirsin; iptal edersen haftanın sonuna kadar avantajların sürer. İsteğe bağlı ödüllü reklamlar açık kalır.',
@@ -5248,7 +5248,7 @@ function backBtn(){try{
 /* v1.46 Canlı güncelleme (Apple/Google onayı beklemeden): oyunun kodu ve görselleri tealbirdgames.com/ota/ferrytales'den
    güncellenir. Uygulama açılınca manifest kontrol edilir, sadece değişen dosyalar indirilir, oyuncu uygulamadan çıkıp dönünce yeni sürüm açılır.
    Yeni yerel eklenti gerektiren değişiklikler için manifestte native_min_ios / native_min_android (derleme numarası) yükseltilir. */
-const WEB_VER='1.51.0';
+const WEB_VER='1.51.1';
 const OTA_BASE='https://tealbirdgames.com/ota/ferrytales/';
 function verGT(a,b){const x=String(a).split('.').map(Number),y=String(b).split('.').map(Number);for(let i=0;i<3;i++){if((x[i]||0)>(y[i]||0))return true;if((x[i]||0)<(y[i]||0))return false;}return false;}
 async function otaCheck(){const U=plug('CapacitorUpdater');if(!U)return;
