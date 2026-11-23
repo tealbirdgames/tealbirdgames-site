@@ -3170,7 +3170,7 @@ function dressModal(){
 }
 
 function showModal(html){const c=$('card');c.classList.remove('dressed');c.innerHTML=html;try{dressModal();iconize(c);}catch(e){}$('modal').classList.add('show');}
-function hideModal(){$('modal').classList.remove('show');}
+function hideModal(){$('modal').classList.remove('show');if(rcMusic){rcMusic=false;try{startMusic();}catch(e){}}}
 function fakeAd(done){
   if(NATIVE()&&plug('AdMob'))return nativeAd(done);
   let n=3;
@@ -3698,7 +3698,7 @@ function rcAdd(){if(!unl('race')||!G)return;const lv=store.get('lvst',{});if((lv
 function rcLane(x,k){const pct=Math.min(1,x.p/RC_N);
   return '<div class="bzl'+(x.me?' me':'')+(x.ft?' fin':'')+'"><span class="bzr">'+(k+1)+'</span><div class="bzt"><em>'+x.nm+'</em><i class="bzw"></i><img class="bzf" style="left:calc('+(pct*100)+'% - '+(pct*44)+'px)" src="'+fimgSrc(x.c,'classic')+'" alt=""><b class="bzfl">🏁</b></div><span class="bzp">'+x.p+'/'+RC_N+'</span></div>';}
 function rcPrz(sm){return '<div class="bzprz'+(sm?' sm':'')+'">'+RC_RW.map((r,k)=>'<div class="bzpz"><b>'+['🥇','🥈','🥉'][k]+'</b><div class="wkrw">'+wkRw(r)+'</div></div>').join('')+'</div>';}
-function rcModal(){const o=rcCheck(rcLoad()),w=rcWin();store.set('nu_race',true);
+function rcModal(){const o=rcCheck(rcLoad()),w=rcWin();store.set('nu_race',true);rcMusic=true;setTimeout(()=>{try{startMusic();}catch(e){}},50);
   let h='<div class="bzm"><div class="bzhd"><span>🏁</span><h2>'+tt('Boğaz Yarışı','Bosphorus Race')+'</h2></div>';
   if(!o||o.cl){
     h+='<p class="bzsub">'+tt('4 kaptana karşı yarış: <b>10 yeni bölümü</b> ilk geçen kazanır. İlk 3\'e girene ödül!','Race 4 captains: the first to clear <b>10 new levels</b> wins. Prizes for the top 3!')+'</p>'+rcPrz();
@@ -4818,8 +4818,9 @@ function startSynth(){
   MUS={k:'synth',g,step:0,loop:0,next:a.currentTime+.15};MUS.timer=setInterval(schedMusic,40);
 }
 /* şehir müzikleri: her şehrin kendi parçası, geçişte yumuşak çapraz geçiş */
-const MUSV=.42,MTRK=['m_ist','m_ven','m_ams','m_par'],MLEN={m_ist:3810240/44100,m_ven:3639132/44100,m_ams:3678822/44100,m_par:3493161/44100},MUSPOS={};let musReq=0;
-function musWant(){try{const m=$('menu');if(m&&m.classList.contains('show')){if(menuTab==='city'&&typeof citySel==='number')return MTRK[Math.min(MTRK.length-1,Math.floor(citySel/8))];return MTRK[cityOfLevel(curLevel())]||MTRK[0];}if(G&&G.L)return MTRK[cityOfLevel(G.L)]||MTRK[0];}catch(e){}return MTRK[0];}
+/* v1.53: yeni müzikler (ElevenLabs, canlı çalınmış his) + dünya haritası, dükkân ve Boğaz Yarışı müzikleri. MEND: döngü sonu, MLS: döngü başı (giriş bir kez çalar) */
+const MUSV=.42,MTRK=['m_ist','m_ven','m_ams','m_par'],MEND={m_ist:87.0,m_ven:87.0,m_ams:86.4805,m_par:87.0,m_map:87.0,m_shop:72.0,m_race:72.0},MLS={m_ist:4.0,m_ams:4.0},MUSPOS={};let musReq=0,rcMusic=false;
+function musWant(){try{if(rcMusic&&$('modal').classList.contains('show'))return 'm_race';const m=$('menu');if(m&&m.classList.contains('show')){if(menuTab==='shop')return 'm_shop';if(menuTab==='world')return 'm_map';if(menuTab==='city'&&typeof citySel==='number')return MTRK[Math.min(MTRK.length-1,Math.floor(citySel/8))];return MTRK[cityOfLevel(curLevel())]||MTRK[0];}if(G&&G.L){try{const o=rcLoad();if(o&&!o.over&&o.me<RC_N&&rcWin().on)return 'm_race';}catch(e){}return MTRK[cityOfLevel(G.L)]||MTRK[0];}}catch(e){}return MTRK[0];}
 function fadeOutMus(){
   if(!MUS)return;const m=MUS;MUS=null;const a=AC;
   if(m.timer)clearInterval(m.timer);
@@ -4839,8 +4840,8 @@ function startMusic(){
       const t=a.currentTime,g=a.createGain();g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(MUSV,t+1.6);g.connect(a.destination);
       const s=a.createBufferSource();s.buffer=b;s.loop=true;
       const ch=b.getChannelData(0),lim=Math.min(ch.length,(b.sampleRate*.2)|0);let i0=0;while(i0<lim&&Math.abs(ch[i0])<1e-3)i0++;if(i0>=lim)i0=0;
-      const ls=i0/b.sampleRate,le=Math.min(b.duration,ls+(MLEN[k]||b.duration));s.loopStart=ls;s.loopEnd=le;s.connect(g);
-      let off=MUSPOS[k]==null?ls:MUSPOS[k];if(off<ls||off>=le-.5)off=ls;
+      const b0=i0/b.sampleRate,ls=b0+(MLS[k]||0),le=Math.min(b.duration,MEND[k]?b0+MEND[k]:b.duration);s.loopStart=ls;s.loopEnd=le;s.connect(g);
+      let off=MUSPOS[k]==null?b0:MUSPOS[k];if(off<b0||off>=le-.5)off=ls;
       s.start(t,off);
       fadeOutMus();
       MUS={k,g,src:s,t0:t,off,ls,le};
@@ -5281,7 +5282,7 @@ function backBtn(){try{
 /* v1.46 Canlı güncelleme (Apple/Google onayı beklemeden): oyunun kodu ve görselleri tealbirdgames.com/ota/ferrytales'den
    güncellenir. Uygulama açılınca manifest kontrol edilir, sadece değişen dosyalar indirilir, oyuncu uygulamadan çıkıp dönünce yeni sürüm açılır.
    Yeni yerel eklenti gerektiren değişiklikler için manifestte native_min_ios / native_min_android (derleme numarası) yükseltilir. */
-const WEB_VER='1.52.4';
+const WEB_VER='1.53.0';
 const OTA_BASE='https://tealbirdgames.com/ota/ferrytales/';
 function verGT(a,b){const x=String(a).split('.').map(Number),y=String(b).split('.').map(Number);for(let i=0;i<3;i++){if((x[i]||0)>(y[i]||0))return true;if((x[i]||0)<(y[i]||0))return false;}return false;}
 async function otaCheck(){const U=plug('CapacitorUpdater');if(!U)return;
