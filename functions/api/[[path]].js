@@ -2,6 +2,10 @@
 // POST /api/ch            {L, nick, pid}                     -> {id}
 // GET  /api/ch/:id                                           -> {id, L, by, rows:[...]}
 // POST /api/ch/:id/res    {pid, nick, won, sec, used, pct}   -> {id, L, by, rows:[...], me}
+// Kaptanlar Tablosu (v1.55): en yüksek bölüm sıralaması
+// GET  /api/lb?pid=                                         -> {n, top:[{p,nick,lvl}], me:{rank,lvl,nick}|null, near:[...]}
+// POST /api/lb            {pid, nick, lvl, stars, plat}      -> aynı tablo
+// POST /api/lb/del        {pid}                              -> {ok}  (oyuncu tablodan çıkmak isterse)
 
 const H = {
   'content-type': 'application/json; charset=utf-8',
@@ -49,6 +53,80 @@ async function board(db, id) {
   };
 }
 
+// ---------- Kaptanlar Tablosu ----------
+const BAD = /(^|[^a-zçğıöşü])(amk|aq(?![a-z])|orospu|oç|piç|sik|yarra|göt|amcık|amcik|ibne|kahpe|pezevenk)|fuck|shit|bitch|cunt|nigg|faggot|porn|hitler|nazi/i;
+const autoNick = (pid) => 'Kaptan ' + (1000 + (parseInt(pid.slice(-6).replace(/[^0-9a-f]/gi, '0'), 16) % 9000));
+// LB_MAX: oyundaki son bölüm + pay (yeni şehir eklenince artır). İlk kayıtta da bunun üstü sayılmaz.
+const LB_MAX = 150, LB_FIRST = 150;
+const rowOut = (r) => ({ p: r.pid.slice(0, 6), nick: r.nick, lvl: r.lvl });
+
+async function lbBoard(db, pid) {
+  const { results: top } = await db.prepare('SELECT pid, nick, lvl FROM lb ORDER BY lvl DESC, reached ASC LIMIT 50').all();
+  const cnt = await db.prepare('SELECT COUNT(*) AS n FROM lb').first();
+  const o = { n: cnt ? cnt.n : 0, top: top.map(rowOut), me: null, near: [] };
+  if (!pid) return o;
+  const me = await db.prepare('SELECT pid, nick, lvl, reached FROM lb WHERE pid = ?').bind(pid).first();
+  if (!me) return o;
+  const ab = await db.prepare('SELECT COUNT(*) AS n FROM lb WHERE lvl > ? OR (lvl = ? AND reached < ?)').bind(me.lvl, me.lvl, me.reached).first();
+  const rank = (ab ? ab.n : 0) + 1;
+  o.me = { p: pid.slice(0, 6), rank, lvl: me.lvl, nick: me.nick };
+  if (rank > 50) {
+    const { results: up } = await db
+      .prepare('SELECT pid, nick, lvl FROM lb WHERE lvl > ? OR (lvl = ? AND reached < ?) ORDER BY lvl ASC, reached DESC LIMIT 2')
+      .bind(me.lvl, me.lvl, me.reached).all();
+    const { results: dn } = await db
+      .prepare('SELECT pid, nick, lvl FROM lb WHERE lvl < ? OR (lvl = ? AND reached > ?) ORDER BY lvl DESC, reached ASC LIMIT 2')
+      .bind(me.lvl, me.lvl, me.reached).all();
+    o.near = [
+      ...up.reverse().map((r, k) => ({ ...rowOut(r), rank: rank - up.length + k })),
+      { ...rowOut(me), rank },
+      ...dn.map((r, k) => ({ ...rowOut(r), rank: rank + 1 + k })),
+    ];
+  }
+  return o;
+}
+
+async function lbRoute(db, request, parts) {
+  if (parts.length === 1 && request.method === 'GET') {
+    const pid = new URL(request.url).searchParams.get('pid');
+    return j(await lbBoard(db, okPid(pid) ? pid : null));
+  }
+  const b = await request.json().catch(() => ({}));
+  if (!okPid(b.pid)) return bad('geçersiz');
+  if (parts.length === 2 && parts[1] === 'del' && request.method === 'POST') {
+    await db.prepare('DELETE FROM lb WHERE pid = ?').bind(b.pid).run();
+    return j({ ok: true });
+  }
+  if (parts.length !== 1 || request.method !== 'POST') return bad('yok', 404);
+  let nick = cleanNick(b.nick);
+  if (!nick || BAD.test(nick)) nick = autoNick(b.pid);
+  let lvl = int(b.lvl, 0, 100000);
+  if (lvl !== null) lvl = Math.min(lvl, LB_MAX);
+  const st = int(b.stars, 0, 100000) || 0;
+  const plat = ['ios', 'android', 'web'].includes(b.plat) ? b.plat : 'web';
+  if (lvl === null) return bad('geçersiz');
+  const now = Date.now();
+  const old = await db.prepare('SELECT lvl, updated FROM lb WHERE pid = ?').bind(b.pid).first();
+  if (!old) {
+    lvl = Math.min(lvl, LB_FIRST);
+    await db
+      .prepare('INSERT INTO lb (pid, nick, lvl, stars, plat, created, updated, reached) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(b.pid, nick, lvl, st, plat, now, now, now).run();
+  } else {
+    // hile koruması: bir bölüm en az ~20 sn sürer; aradaki süreden fazlası sayılmaz
+    const cap = old.lvl + 1 + Math.floor((now - old.updated) / 20000);
+    lvl = Math.min(lvl, cap);
+    if (lvl > old.lvl) {
+      await db.prepare('UPDATE lb SET nick = ?, lvl = ?, stars = ?, plat = ?, updated = ?, reached = ? WHERE pid = ?')
+        .bind(nick, lvl, st, plat, now, now, b.pid).run();
+    } else {
+      await db.prepare('UPDATE lb SET nick = ?, stars = ?, plat = ?, updated = ? WHERE pid = ?')
+        .bind(nick, st, plat, now, b.pid).run();
+    }
+  }
+  return j(await lbBoard(db, b.pid));
+}
+
 export async function onRequest({ request, env, params }) {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: H });
   const db = env.DB;
@@ -56,6 +134,8 @@ export async function onRequest({ request, env, params }) {
   const parts = Array.isArray(params.path) ? params.path : [params.path].filter(Boolean);
 
   try {
+    if (parts[0] === 'lb') return await lbRoute(db, request, parts);
+
     // POST /api/ch
     if (parts.length === 1 && parts[0] === 'ch' && request.method === 'POST') {
       const b = await request.json().catch(() => ({}));
