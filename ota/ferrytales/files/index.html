@@ -5282,7 +5282,7 @@ function backBtn(){try{
 /* v1.46 Canlı güncelleme (Apple/Google onayı beklemeden): oyunun kodu ve görselleri tealbirdgames.com/ota/ferrytales'den
    güncellenir. Uygulama açılınca manifest kontrol edilir, sadece değişen dosyalar indirilir, oyuncu uygulamadan çıkıp dönünce yeni sürüm açılır.
    Yeni yerel eklenti gerektiren değişiklikler için manifestte native_min_ios / native_min_android (derleme numarası) yükseltilir. */
-const WEB_VER='1.53.0';
+const WEB_VER='1.54.0';
 const OTA_BASE='https://tealbirdgames.com/ota/ferrytales/';
 function verGT(a,b){const x=String(a).split('.').map(Number),y=String(b).split('.').map(Number);for(let i=0;i<3;i++){if((x[i]||0)>(y[i]||0))return true;if((x[i]||0)<(y[i]||0))return false;}return false;}
 async function otaCheck(){const U=plug('CapacitorUpdater');if(!U)return;
@@ -5321,16 +5321,34 @@ async function notifSchedule(ask){const LN=plug('LocalNotifications');if(!LN||st
 function saveBlob(){const o={v:1,t:Date.now()};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('vy_')&&!/^vy_(anq|errlog)$/.test(k))o[k]=localStorage.getItem(k);}return JSON.stringify(o);}
 function loadBlob(js){const o=JSON.parse(js);if(!o||o.v!==1)throw new Error('bad save');Object.keys(o).forEach(k=>{if(k.startsWith('vy_'))localStorage.setItem(k,o[k]);});}
 function progScore(o){const g=k=>{try{return JSON.parse(o['vy_'+k]||'0')||0;}catch(e){return 0;}};return g('level')*1000+g('stars');}
-async function cloudSync(){const P=plug('PlayGamesSave');if(!P)return;
-  try{const r=await P.load({name:'vapura'}).catch(()=>null);
-    if(r&&r.data){const remote=JSON.parse(r.data),local=JSON.parse(saveBlob());
-      if(progScore(remote)>progScore(local)&&!store.get('cloudAsk',0)){store.set('cloudAsk',1);
-        showModal('<div class="em">☁️</div><h2>'+tt('Kayıtlı ilerleme bulundu','Saved progress found')+'</h2><p>'+tt('Bulutta daha ileri bir kayıt var (Bölüm ','A further save exists in the cloud (Level ')+JSON.parse(remote.vy_level||'1')+'). '+tt('Yüklensin mi?','Load it?')+'</p><button class="btn gold" id="clY">'+tt('Evet, yükle','Yes, load')+'</button><button class="btn alt" id="clN">'+tt('Hayır','No')+'</button>');
-        $('clY').onclick=()=>{loadBlob(r.data);track('cloud_load',{});location.reload();};$('clN').onclick=hideModal;return;}}
-    await P.save({name:'vapura',data:saveBlob(),description:'Bölüm '+curLevel()});}catch(e){errLog(e);}}
-function appPause(){try{track('session_end',{L:curLevel()});notifSchedule();cloudSync();}catch(e){}}
+/* v1.54 bulut kayıt: Android = Google Play Games Saved Games, iOS = iCloud key-value (yerel eklenti adı CloudSave).
+   - Yeni kurulumda (yerelde gerçek ilerleme yoksa) buluttaki daha ileri kayıt sormadan geri yüklenir.
+   - Yerelde de ilerleme varsa oyuncuya sorulur. Buluttaki daha ileri kayıt, oyuncu "yeni başla" demedikçe ezilmez. */
+function cloudP(){return plug('CloudSave')||plug('PlayGamesSave');}
+function blobNoT(js){try{const o=JSON.parse(js);delete o.t;return JSON.stringify(o);}catch(e){return js;}}
+let _cloudLast='',_cloudBusy=false,_cloudChecked=false;
+async function cloudSave(force){const P=cloudP();if(!P||_cloudBusy||!_cloudChecked)return;
+  try{const js=saveBlob(),k=blobNoT(js);if(!force&&k===_cloudLast)return;_cloudBusy=true;
+    await P.save({name:'vapura',data:js,description:tt('Bölüm ','Level ')+curLevel()});_cloudLast=k;store.set('cloudT',Date.now());}
+  catch(e){errLog(e);}finally{_cloudBusy=false;}}
+async function cloudSync(){const P=cloudP();if(!P)return;
+  try{if(!_cloudChecked){const inter=!store.get('cloudSignAsk',0);store.set('cloudSignAsk',1);
+      const r=await P.load({name:'vapura',interactive:inter}).catch(e=>{errLog(e);return null;});
+      if(!r||r.signedIn===false){track('cloud_nosign',{i:inter?1:0});return;}
+      _cloudChecked=true;
+      if(r&&r.data){let remote=null;try{remote=JSON.parse(r.data);}catch(e){}
+        if(remote&&remote.v===1){const local=JSON.parse(saveBlob()),rs=progScore(remote),ls=progScore(local),decl=store.get('cloudDecl',-1);
+          if(rs>ls&&decl!==rs){
+            if(ls<5000){loadBlob(r.data);store.set('cloudRestored',1);track('cloud_load',{auto:1,L:JSON.parse(remote.vy_level||'1')});location.reload();return;}
+            showModal('<div class="em">☁️</div><h2>'+tt('Kayıtlı ilerleme bulundu','Saved progress found')+'</h2><p>'+tt('Bulutta daha ileri bir kayıt var (Bölüm ','A further save exists in the cloud (Level ')+JSON.parse(remote.vy_level||'1')+'). '+tt('Yüklensin mi?','Load it?')+'</p><button class="btn gold" id="clY">'+tt('Evet, yükle','Yes, load')+'</button><button class="btn alt" id="clN">'+tt('Hayır, buradakiyle devam et','No, keep this one')+'</button>');
+            $('clY').onclick=()=>{loadBlob(r.data);store.set('cloudRestored',1);track('cloud_load',{auto:0});location.reload();};
+            $('clN').onclick=()=>{store.set('cloudDecl',rs);track('cloud_decline',{});hideModal();cloudSave(true);};return;}}}}
+    await cloudSave(false);}catch(e){errLog(e);}}
+function cloudRestoredNote(){try{if(store.get('cloudRestored',0)){store.set('cloudRestored',0);setTimeout(()=>toast(tt('☁️ İlerlemen buluttan geri yüklendi','☁️ Your progress was restored from the cloud'),true),1500);}}catch(e){}}
+setInterval(()=>{try{if(NATIVE()&&document.visibilityState==='visible')cloudSave(false);}catch(e){}},180000);
+function appPause(){try{track('session_end',{L:curLevel()});notifSchedule();if(_cloudChecked)cloudSave(true);else cloudSync();}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')appPause();});
-setTimeout(()=>{try{if(NATIVE()){const A=plug('App');if(A&&A.addListener)A.addListener('pause',appPause);cloudSync();}}catch(e){}},2500);
+setTimeout(()=>{try{if(NATIVE()){const A=plug('App');if(A&&A.addListener)A.addListener('pause',appPause);cloudSync();cloudRestoredNote();}}catch(e){}},1200);
 try{nativeBoot();}catch(e){}
 try{snowFx();}catch(e){}
 </script>
