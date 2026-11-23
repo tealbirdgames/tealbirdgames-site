@@ -2762,7 +2762,7 @@ function anDays(){const i=store.get('inst',0)||Date.now();return Math.floor((Dat
 function stat(L,k,n){const st=store.get('stats',{});st[L]=st[L]||{t:0,f:0,b:0,w:0};st[L][k]+=n||1;store.set('stats',st);}
 /* v1.40 Remote Config: Firebase'den güncelleme çıkmadan değiştirilebilen ayarlar.
    Varsayılan değerler burada [varsayılan, en az, en çok]; uzaktan gelen değer sınır dışındaysa yok sayılır. */
-const RCF_DEF={ad_inter_from:[19,5,200],ad_inter_gap_sec:[90,30,600],ad_inter_prep:[2,0,10],ad_coin_daily:[5,0,20],ad_noads_offer_max:[2,0,10],ad_refresh_min:[55,10,59],ad_test:[true],ota_on:[true],ad_reward_units:[''],ad_inter_units:[''],ad_reward_units_ios:[''],ad_inter_units_ios:[''],eco_level_mult:[1,.5,3],eco_replay_coins:[5,0,50],race_on:[true],race_bot_time:[1,.3,5],ban_on:[true],ban_from:[5,1,200],club_on:[true],loop_on:[true],day_on:[true],day_from:[21,5,200],net_on:[true],net_from:[5,1,200]};
+const RCF_DEF={ad_inter_from:[19,5,200],ad_inter_gap_sec:[90,30,600],ad_inter_prep:[2,0,10],ad_coin_daily:[5,0,20],ad_noads_offer_max:[2,0,10],ad_refresh_min:[55,10,59],ad_test:[false],ota_on:[true],ad_reward_units:[''],ad_inter_units:[''],ad_reward_units_ios:[''],ad_inter_units_ios:[''],eco_level_mult:[1,.5,3],eco_replay_coins:[5,0,50],race_on:[true],race_bot_time:[1,.3,5],ban_on:[true],ban_from:[5,1,200],club_on:[true],loop_on:[true],day_on:[true],day_from:[21,5,200],net_on:[true],net_from:[5,1,200]};
 let RCF={},RCF_N=0;
 function rcfgSet(o){RCF={};RCF_N=0;for(const k in RCF_DEF){const d=RCF_DEF[k];let v=d[0];if(o&&o[k]!=null){const r=o[k];
     if(typeof d[0]==='number'){const n=parseFloat(r);if(isFinite(n)&&n>=d[1]&&n<=d[2]){v=n;RCF_N++;}}
@@ -4977,8 +4977,8 @@ function plug(n){const C=window.Capacitor;return C&&C.Plugins&&C.Plugins[n];}
 /* ---------- uygulama katmanı 2: reklam + satın alma + geri tuşu (v1.30) ----------
    ⚠ Yayından önce değişecekler: AD_UNITS (gerçek AdMob birim kimlikleri), android strings.xml admob_app_id,
    SKU listesindeki ürünler Play Console'da aynı kimliklerle açılmalı. */
-/* AdMob (tealbirdgames, pub-9449809826221507). Test reklamı: Remote Config 'ad_test' (varsayılan açık) ya da geliştirici test modu.
-   ⚠ Mağazaya göndermeden önce RCF_DEF'te ad_test varsayılanını false yap (ya da Firebase'de ad_test=false). */
+/* AdMob (tealbirdgames, pub-9449809826221507). v1.51: gerçek reklamlar varsayılan (ad_test=false).
+   Test reklamı için: Remote Config 'ad_test'=true ya da geliştirici test modu. */
 let AD_TEST=true;
 function adTestOn(){try{return !!(cfg('ad_test')||(store.get('dev',false)&&store.get('testmode',false)));}catch(e){return true;}}
 const AD_UNITS=(window.Capacitor&&Capacitor.getPlatform&&Capacitor.getPlatform()==='ios')
@@ -5248,7 +5248,7 @@ function backBtn(){try{
 /* v1.46 Canlı güncelleme (Apple/Google onayı beklemeden): oyunun kodu ve görselleri tealbirdgames.com/ota/ferrytales'den
    güncellenir. Uygulama açılınca manifest kontrol edilir, sadece değişen dosyalar indirilir, oyuncu uygulamadan çıkıp dönünce yeni sürüm açılır.
    Yeni yerel eklenti gerektiren değişiklikler için manifestte native_min_ios / native_min_android (derleme numarası) yükseltilir. */
-const WEB_VER='1.50.0';
+const WEB_VER='1.51.0';
 const OTA_BASE='https://tealbirdgames.com/ota/ferrytales/';
 function verGT(a,b){const x=String(a).split('.').map(Number),y=String(b).split('.').map(Number);for(let i=0;i<3;i++){if((x[i]||0)>(y[i]||0))return true;if((x[i]||0)<(y[i]||0))return false;}return false;}
 async function otaCheck(){const U=plug('CapacitorUpdater');if(!U)return;
