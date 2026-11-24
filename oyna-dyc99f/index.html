@@ -2160,6 +2160,14 @@ html[lang=en] .hside>*.nu::before,html[lang=en] .hpbar.nu::before{content:'NEW'}
 .clfine a{color:inherit;font-weight:700}
 /* v1.44 günlük bölüm */
 .hday{position:relative;border:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;background:linear-gradient(135deg,#fff3d6,#ffc96b);border-radius:16px;padding:4px 7px 6px;box-shadow:0 0 0 2px #d08a1c,0 4px 0 2px #9a5f0e,0 6px 10px rgba(0,0,0,.22)}
+.hlbb{background:linear-gradient(135deg,#e3fbff,#7fd8f0);box-shadow:0 0 0 2px #2b93b8,0 4px 0 2px #1b6684,0 6px 10px rgba(0,0,0,.22)}
+.hlbb b{color:#0f4f69}
+.lbl{max-height:44vh}
+.lbl li.lbgap{justify-content:center;background:none;padding:0;margin:0;opacity:.6}
+.lbme{margin:4px 0 6px;font-size:15px}
+.lbnm{margin:2px 0 10px;font-size:14px}
+.lbnm .lnk{display:inline;margin:0 0 0 4px;padding:0}
+.lbhide{display:block;margin:8px auto 0;font-size:12px;opacity:.6}
 .hday .hdi{font-size:28px;line-height:1;margin-top:-10px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.3))}
 .hday b{font-family:'Lilita One','Fredoka',sans-serif;font-weight:400;font-size:13px;color:#7a4a00;line-height:1}
 .hday .dot{position:absolute;right:-6px;top:-6px;min-width:18px;height:18px;border-radius:9px;background:radial-gradient(circle at 40% 35%,#ff8f8f,#e5484d);border:2px solid #fff;color:#fff;font-size:10px;font-style:normal;font-weight:900;display:grid;place-items:center}
@@ -2791,7 +2799,7 @@ function anDays(){const i=store.get('inst',0)||Date.now();return Math.floor((Dat
 function stat(L,k,n){const st=store.get('stats',{});st[L]=st[L]||{t:0,f:0,b:0,w:0};st[L][k]+=n||1;store.set('stats',st);}
 /* v1.40 Remote Config: Firebase'den güncelleme çıkmadan değiştirilebilen ayarlar.
    Varsayılan değerler burada [varsayılan, en az, en çok]; uzaktan gelen değer sınır dışındaysa yok sayılır. */
-const RCF_DEF={ad_inter_from:[19,5,200],ad_inter_gap_sec:[90,30,600],ad_inter_prep:[2,0,10],ad_coin_daily:[5,0,20],ad_noads_offer_max:[2,0,10],ad_refresh_min:[55,10,59],ad_test:[false],ota_on:[true],ad_reward_units:[''],ad_inter_units:[''],ad_reward_units_ios:[''],ad_inter_units_ios:[''],eco_level_mult:[1,.5,3],eco_replay_coins:[5,0,50],race_on:[true],race_bot_time:[1,.3,5],ban_on:[true],ban_from:[5,1,200],club_on:[true],loop_on:[true],day_on:[true],day_from:[21,5,200],net_on:[true],net_from:[5,1,200]};
+const RCF_DEF={lb_on:[true],ad_inter_from:[19,5,200],ad_inter_gap_sec:[90,30,600],ad_inter_prep:[2,0,10],ad_coin_daily:[5,0,20],ad_noads_offer_max:[2,0,10],ad_refresh_min:[55,10,59],ad_test:[false],ota_on:[true],ad_reward_units:[''],ad_inter_units:[''],ad_reward_units_ios:[''],ad_inter_units_ios:[''],eco_level_mult:[1,.5,3],eco_replay_coins:[5,0,50],race_on:[true],race_bot_time:[1,.3,5],ban_on:[true],ban_from:[5,1,200],club_on:[true],loop_on:[true],day_on:[true],day_from:[21,5,200],net_on:[true],net_from:[5,1,200]};
 let RCF={},RCF_N=0;
 function rcfgSet(o){RCF={};RCF_N=0;for(const k in RCF_DEF){const d=RCF_DEF[k];let v=d[0];if(o&&o[k]!=null){const r=o[k];
     if(typeof d[0]==='number'){const n=parseFloat(r);if(isFinite(n)&&n>=d[1]&&n<=d[2]){v=n;RCF_N++;}}
@@ -3219,6 +3227,8 @@ function win0(){
   const sDur=starShow(st);
   setTimeout(()=>{document.querySelectorAll('.reward .rcnt').forEach(el=>{const v=+el.dataset.v,t0=performance.now();(function f(t){const u=Math.min(1,(t-t0)/650);el.textContent='+'+Math.round(v*(1-Math.pow(1-u,3)));if(u<1)requestAnimationFrame(f);else{try{el.animate([{scale:'1.35'},{scale:'1'}],{duration:260,easing:'ease-out'})}catch(e){}}})(t0);});tone(1100,.08,'square',.04);},sDur);
   {const fl=G.L;if([5,10,20].includes(fl)&&!store.get('fbask'+fl,false)){store.set('fbask'+fl,true);store.set('fbPend',true);}}
+  if(!replay&&REVIEW_LV.includes(G.L))setTimeout(()=>askReview(G.L),2600);
+  if(!replay)setTimeout(()=>lbSubmit(false),1500);
   const nL=G.L>DAY0?curLevel():G.L+1,wL=G.L;
   if($('mNext'))$('mNext').onclick=()=>{sfx.tap();afterWin(wL,()=>goNext(nL));};
   if($('mHome'))$('mHome').onclick=()=>{sfx.tap();afterWin(wL,()=>{openRoad(true);rewardFly();});};
@@ -3226,6 +3236,9 @@ function win0(){
   if($('mMap'))$('mMap').addEventListener('click',()=>{window._rwd=null;},true);
   if($('mMap'))$('mMap').onclick=()=>{sfx.tap();if(tut3)window._ftueR=1;citySel=nr.i;openMenu('city');};
 }
+// mağaza yorum isteği: Apple/Google'ın kendi puan penceresi (yönlendirmesiz, kota platformda)
+const REVIEW_LV=[7,30,75];
+function askReview(L){if(!NATIVE())return;const P=plug('AppReview');if(!P||store.get('rvAsk'+L,false))return;store.set('rvAsk'+L,true);track('review_ask',{L});try{P.request().then(r=>track('review_req',{L,ok:r&&r.ok?1:0})).catch(()=>{});}catch(e){}}
 function goNext(L){tickLives();if(lives<=0&&!infLeft()){livesModal(()=>goNext(L));return;}
   if(gateBlocked(L)||soonOn(L)){openRoad(true);rewardFly();return;}
   window._rwd=null;hideModal();closeMenu();startLevel(L,{});}
@@ -3619,7 +3632,7 @@ function cityStrip(){
   return '<div class="cstrip" id="cstrip">'+CITIES.map((c,k)=>{const st=c.soon?'soon':cityOpen(k)?(k===cc?'cur':'done'):'lock';
     return (k?'<i class="cdash '+(cityOpen(k)?'on':'')+'"></i>':'')+'<span class="cdot '+st+'" title="'+c.n+'">'+(st==='lock'||st==='soon'?'<small>🔒</small>':'')+c.flag+'</span>';}).join('')+'</div>';
 }
-const UNL={chest:3,port:6,kmb:8,start:10,pass:12,week:15,race:19};
+const UNL={chest:3,lb:5,port:6,kmb:8,start:10,pass:12,week:15,race:19};
 function unl(k){return curLevel()>UNL[k];}
 const UNL_MSG={race:['🏁 Boğaz Yarışı açıldı! Her cuma öğleden pazar gecesine kadar 4 kaptana karşı yarış, ilk 3\'e gir, ödülü kap.','🏁 Bosphorus Race unlocked! Every Friday noon to Sunday night, race 4 captains and grab a prize in the top 3.'],port:['⚓ Limanın açıldı! İlk dükkânını kur, sen yokken bile altın kazansın.','⚓ Your port is open! Build your first shop, it earns coins even while you are away.'],kmb:['🥯 Simit Kumbarası açıldı! Bölüm geçtikçe içine altın birikir.','🥯 Simit Bank unlocked! Coins pile up inside as you clear levels.'],pass:['🎫 Vapur Bileti açıldı! Bölüm geçtikçe damga topla, ödülleri kap.','🎫 Ferry Pass unlocked! Collect stamps as you clear levels and grab rewards.'],week:['🏆 Haftalık görevler açıldı! Her pazartesi 3 yeni görev ve büyük sandık.','🏆 Weekly tasks unlocked! 3 new tasks and a grand chest every Monday.']};
 /* v1.33 Haftalık görevler: her pazartesi 00:00'da yenilenen 3 görev + büyük sandık */
@@ -3787,7 +3800,7 @@ function renderHome(){
   $('tab-home').innerHTML='<div class="hhome">'+
    '<div class="hpsc" id="hpsc"></div><i class="hshade t"></i><i class="hshade b"></i>'+
    '<div class="hpbar'+(hbOpen()?'':' lk')+(CURPORT==='ist'?nu('port'):(store.get('nu_port_'+CURPORT,false)?'':' nu'))+'" id="hpBar" role="button">'+homeBar(s)+'</div>'+
-   '<div class="hside l">'+psB+stB+'</div><div class="hside r">'+dayBtn()+rcBtn(nu('race'))+wkBtn(nu('week'))+kmbB+'</div>'+
+   '<div class="hside l">'+psB+stB+lbBtn(nu('lb'))+'</div><div class="hside r">'+dayBtn()+rcBtn(nu('race'))+wkBtn(nu('week'))+kmbB+'</div>'+
    (psOwnsCos('badge')?'<span class="hbadge">⚓ '+tt('Kaptan','Captain')+'</span>':'')+(psTheme().snow?'<div class="hsnow">'+Array.from({length:26},(_,k)=>'<i style="left:'+((k*37)%100)+'%;animation-duration:'+(6+(k*13)%7)+'s;animation-delay:-'+((k*1.7)%9).toFixed(1)+'s;width:'+(3+(k%4))+'px;height:'+(3+(k%4))+'px"></i>').join('')+'</div>':'')+
    '<div class="hbot"><button class="hisle" id="goCity" aria-label="'+C.n+'"><span class="hchip">'+C.n+' <i class="hcs">'+done+'/8</i>'+(can?' <img class="ei" src="assets/ui_star.webp" alt="">':'')+'</span></button>'+
    '<div class="hplay">'+(unl('chest')?'<button class="rbtn rb2" id="hChest"><img src="assets/r_chest.webp" alt="">'+(drOk?'<i class="dot"></i>':'')+'</button>':'<span class="rbsp"></span>')+
@@ -3799,6 +3812,7 @@ function renderHome(){
   if(window._stArm){window._stArm=false;setTimeout(starterModal,700);}
   $('hpBar').onclick=e=>{if(e.target.closest('#hAll'))return;ac();sfx.tap();if(!hbOpen()){toast(tt('Liman 7. bölümde açılıyor. Haydi bölümlere! ⛴️','The port opens at level 7. Keep playing! ⛴️'));return;}store.set('nu_port',true);store.set('nu_port_'+CURPORT,true);menuTab='port';renderMenu();};
   if($('goWk'))$('goWk').onclick=()=>{ac();sfx.tap();wkModal();};
+  if($('goLb'))$('goLb').onclick=()=>{ac();sfx.tap();store.set('nu_lb',true);lbModal();};
   if($('goRc'))$('goRc').onclick=()=>{ac();sfx.tap();rcModal();};
   if($('goDay'))$('goDay').onclick=()=>{ac();sfx.tap();dayModal();};
   if($('goPass'))$('goPass').onclick=()=>{ac();sfx.tap();store.set('nu_pass',true);menuTab='pass';renderMenu();};
@@ -5194,6 +5208,44 @@ function dayDone(){const d=dayIdx();if(store.get('dayDone',-1)===d)return;store.
   const rw=DAY_RW[Math.min(n,DAY_RW.length)-1];track('daily_win',{streak:n});
   setTimeout(()=>{setCoins(coins+rw,true);try{sfx.coin();}catch(e){}toast('📅 '+tt('Günün bölümü tamam! +'+rw+' 🪙 · Seri '+n,'Daily level done! +'+rw+' 🪙 · Streak '+n),true);},1900);}
 function dayLeft(){const d=new Date(),n=new Date(d);n.setHours(24,0,0,0);return n-d;}
+/* ---------- v1.55 Kaptanlar Tablosu: en yüksek bölüm sıralaması (sunucu: tealbirdgames.com/api/lb, Pages Functions + D1) ----------
+   Herkese otomatik takma ad verilir (değiştirilebilir). Gerçek isim/e-posta yok. Ayarlardan "sıralamada görünme" ile kayıt silinir. */
+const LB_BASE=/(^|\.)tealbirdgames\.com$|\.pages\.dev$/.test(location.hostname)&&/^https?:$/.test(location.protocol)?'/api/':'https://tealbirdgames.com/api/';
+function lbOn(){return !!cfg('lb_on');}
+function lbOff(){return !!store.get('lbOff',false);}
+function lbNick(){let n=store.get('chNick','');if(!n){const A=LANG==='tr'?['Martı','Yunus','Palamut','Lüfer','Simit','Pelikan','Karabatak','Hamsi','Vapur','Fener']:['Gull','Dolphin','Bonito','Bluefish','Simit','Pelican','Cormorant','Anchovy','Ferry','Lighthouse'],b=new Uint8Array(2);crypto.getRandomValues(b);
+  n=A[b[0]%A.length]+' '+(1000+((b[1]<<4)|(b[0]>>4))%9000);store.set('chNick',n);}return n;}
+function lbPlat(){try{return NATIVE()?(IOS()?'ios':'android'):'web';}catch(e){return 'web';}}
+async function lbApi(path,body){const r=await fetch(LB_BASE+path,body?{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}:{cache:'no-store'});
+  const o=await r.json().catch(()=>({}));if(!r.ok)throw Object.assign(new Error(o.error||('http '+r.status)),{status:r.status});return o;}
+let _lbLast=0;
+async function lbSubmit(force){if(!lbOn()||lbOff()||!unl('lb'))return null;const now=Date.now();if(!force&&now-_lbLast<30000)return null;_lbLast=now;
+  try{return await lbApi('lb',{pid:chPid(),nick:lbNick(),lvl:Math.max(0,curLevel()-1),stars:stars|0,plat:lbPlat()});}catch(e){return null;}}
+function lbBtn(nu){if(!lbOn()||!unl('lb'))return '';return '<button class="hday hlbb'+nu+'" id="goLb"><span class="hdi">🏆</span><b>'+tt('Sıralama','Ranks')+'</b></button>';}
+function lbRow(r,rk,meP){return '<li class="'+(r.p===meP?'me':'')+'"><b>'+(rk<=3?['🥇','🥈','🥉'][rk-1]:rk+'.')+'</b><span>'+chEsc(r.nick)+'</span><em>'+tt('Bölüm ','Lv ')+r.lvl+'</em></li>';}
+async function lbModal(){if(!lbOn())return;track('lb_open',{L:curLevel()});
+  if(lbOff()){showModal('<div class="chhd"><span>🏆</span><h2>'+tt('Kaptanlar Tablosu','Captains Board')+'</h2></div><p class="chsub">'+tt('Şu an sıralamada görünmüyorsun. Katılırsan sadece takma adın ve bölümün görünür.','You are hidden from the rankings. If you join, only your nickname and level are shown.')+'</p><button class="btn gold" id="lbJoin">'+tt('Tabloya katıl','Join the board')+'</button><button class="btn alt" id="lbX">'+tt('Kapat','Close')+'</button>');
+    $('lbJoin').onclick=()=>{sfx.tap();store.set('lbOff',false);track('lb_join');lbModal();};$('lbX').onclick=()=>{sfx.tap();hideModal();};return;}
+  chBusy(tt('Sıralama yükleniyor…','Loading rankings…'));
+  let o=await lbSubmit(true);if(!o){try{o=await lbApi('lb?pid='+encodeURIComponent(chPid()));}catch(e){chErr(e);return;}}
+  if(!$('modal').classList.contains('show'))return;
+  const meP=chPid().slice(0,6),T=o.top||[],me=o.me;
+  let h='<div class="chhd"><span>🏆</span><h2>'+tt('Kaptanlar Tablosu','Captains Board')+'</h2></div><p class="chsub">'+tt('En yüksek bölüm · '+(o.n||0)+' kaptan','Highest level · '+(o.n||0)+' captains')+'</p>';
+  h+='<ol class="chlb lbl">'+(T.length?T.map((r,k)=>lbRow(r,k+1,meP)).join(''):'<li><span>'+tt('Henüz kimse yok. İlk sen ol!','Nobody yet. Be the first!')+'</span></li>');
+  if(me&&me.rank>T.length&&(o.near||[]).length)h+='<li class="lbgap">⋯</li>'+o.near.map(r=>lbRow(r,r.rank,meP)).join('');
+  h+='</ol>';
+  if(me){const ab=me.rank>1?((o.near||[]).find(r=>r.rank===me.rank-1)||T[me.rank-2]):null,gap=ab?ab.lvl-me.lvl:0;
+    h+='<p class="lbme">'+tt('Sen: <b>'+me.rank+'.</b> sıradasın','You are <b>#'+me.rank+'</b>')+(gap>0?' · '+tt('üstündeki kaptana '+gap+' bölüm var','next captain is '+gap+' level'+(gap>1?'s':'')+' ahead'):me.rank===1?' · '+tt('zirvedesin! 👑','top of the board! 👑'):'')+'</p>';}
+  h+='<div class="lbnm">'+tt('Takma adın: ','Your nickname: ')+'<b>'+chEsc(lbNick())+'</b> <button class="lnk" id="lbNm">✏️ '+tt('Değiştir','Change')+'</button></div>';
+  h+='<button class="btn" id="lbX">'+tt('Kapat','Close')+'</button><button class="lnk lbhide" id="lbHide">'+tt('Sıralamada görünme','Hide me from rankings')+'</button>';
+  showModal(h);
+  const mr=document.querySelector('.lbl li.me');if(mr)setTimeout(()=>{try{mr.scrollIntoView({block:'center'});}catch(e){}},60);
+  $('lbX').onclick=()=>{sfx.tap();hideModal();};
+  $('lbNm').onclick=()=>{sfx.tap();chNick(()=>{track('lb_nick');lbModal();});};
+  $('lbHide').onclick=()=>{sfx.tap();showModal('<div class="em">🙈</div><h2>'+tt('Sıralamadan çıkılsın mı?','Leave the rankings?')+'</h2><p>'+tt('Takma adın ve bölümün tablodan silinir. İstediğin zaman geri katılabilirsin.','Your nickname and level will be removed. You can rejoin any time.')+'</p><button class="btn gold" id="lbDel">'+tt('Evet, çıkar','Yes, remove me')+'</button><button class="btn alt" id="lbBk">'+tt('Vazgeç','Cancel')+'</button>');
+    $('lbBk').onclick=()=>{sfx.tap();lbModal();};
+    $('lbDel').onclick=async()=>{sfx.tap();chBusy(tt('Siliniyor…','Removing…'));try{await lbApi('lb/del',{pid:chPid()});store.set('lbOff',true);track('lb_off');toast(tt('Sıralamadan çıktın ✓','You left the rankings ✓'),true);hideModal();}catch(e){chErr(e);}};};
+}
 function dayBtn(){if(!dayOn())return '';const dn=dayDoneToday();
   return '<button class="hday" id="goDay"><span class="hdi">📅</span><b>'+(dn?'✓':tt('Günlük','Daily'))+'</b>'+(dn?'':'<i class="dot">!</i>')+'</button>';}
 function dayModal(){const d=dayIdx(),L=dayL(),dn=dayDoneToday(),st=dayStreak(),nx=DAY_RW[Math.min(st+(dn?0:1),DAY_RW.length)-1];
@@ -5282,7 +5334,7 @@ function backBtn(){try{
 /* v1.46 Canlı güncelleme (Apple/Google onayı beklemeden): oyunun kodu ve görselleri tealbirdgames.com/ota/ferrytales'den
    güncellenir. Uygulama açılınca manifest kontrol edilir, sadece değişen dosyalar indirilir, oyuncu uygulamadan çıkıp dönünce yeni sürüm açılır.
    Yeni yerel eklenti gerektiren değişiklikler için manifestte native_min_ios / native_min_android (derleme numarası) yükseltilir. */
-const WEB_VER='1.54.0';
+const WEB_VER='1.55.0';
 const OTA_BASE='https://tealbirdgames.com/ota/ferrytales/';
 function verGT(a,b){const x=String(a).split('.').map(Number),y=String(b).split('.').map(Number);for(let i=0;i<3;i++){if((x[i]||0)>(y[i]||0))return true;if((x[i]||0)<(y[i]||0))return false;}return false;}
 async function otaCheck(){const U=plug('CapacitorUpdater');if(!U)return;
