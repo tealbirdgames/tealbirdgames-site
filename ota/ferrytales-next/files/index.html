@@ -2518,9 +2518,18 @@ function buzz(ms){if(!vibOn)return;try{const H=NATIVE()&&plug('Haptics');
 const SNDV=2,SNDN=['tap','seat','no','horn','horn2','coin','magic','win','lose','combo','star','chest','unlock','gondola','water','ui'];
 const SNDVOL={tap:.55,seat:.55,no:.5,horn:.26,horn2:.42,coin:.5,magic:.55,win:.6,lose:.55,combo:.5,star:.5,chest:.6,unlock:.5,gondola:.5,water:.45,ui:.4};
 const SRAW={},SBUF={},SDEC={},SLAST={};
-function sndRaw(n){if(!SRAW[n])SRAW[n]=fetch('assets/snd/'+n+'.mp3?v='+SNDV).then(r=>r.ok?r.arrayBuffer():null).catch(()=>null);return SRAW[n];}
+/* v1.57: ses yükleme teşhisi — her dosyanın sonucu 'snddiag'a yazılır (test istatistikleri ekranında görünür); sorgu dizgili istek başarısız olursa dizgisiz tekrar denenir */
+function sndDiag(n,v){try{const d=store.get('snddiag',{});d[n]=v;store.set('snddiag',d);}catch(e){}}
+function sndRaw(n){if(!SRAW[n]){const u='assets/snd/'+n+'.mp3';
+  /* v1.57.1: iOS uygulamasında (Capacitor) mp3 yanıtı HTTP olmayan bir yanıt olarak döner: fetch status 0 ve ok=false görür.
+     Önceden bu yüzden iPhone'da hiçbir gerçek ses/müzik yüklenmiyor, oyun yedek elektronik seslere düşüyordu. Artık status 0 kabul edilir; olmazsa XHR ile denenir. */
+  const chk=ab=>{if(!ab||ab.byteLength<1000)throw new Error('kısa '+(ab?ab.byteLength:0));return ab;};
+  const get=q=>fetch(u+q).then(r=>{if(!r.ok&&r.status!==0)throw new Error('http '+r.status);return r.arrayBuffer();}).then(chk);
+  const xhr=()=>new Promise((res,rej)=>{try{const x=new XMLHttpRequest();x.open('GET',u,true);x.responseType='arraybuffer';x.onload=()=>{(x.status===200||x.status===0)&&x.response?res(x.response):rej(new Error('xhr '+x.status));};x.onerror=()=>rej(new Error('xhr hata'));x.send();}catch(e){rej(e);}}).then(chk);
+  SRAW[n]=get('?v='+SNDV).catch(e1=>xhr().catch(e2=>{sndDiag(n,'yok: '+String(e1&&e1.message||e1).slice(0,40)+' / '+String(e2&&e2.message||e2).slice(0,40));errLog('snd '+n+' '+(e2&&e2.message||e2));delete SRAW[n];return null;}));}
+  return SRAW[n];}
 function sndDecode(n){const a=ac();if(!a)return Promise.resolve(null);if(SBUF[n])return Promise.resolve(SBUF[n]);if(SDEC[n])return SDEC[n];
-  SDEC[n]=sndRaw(n).then(ab=>ab?new Promise(res=>{try{const r=a.decodeAudioData(ab.slice(0),b=>res(b),()=>res(null));if(r&&r.catch)r.catch(()=>res(null));}catch(e){res(null);}}):null).then(b=>{if(b)SBUF[n]=b;else delete SDEC[n];return b;});return SDEC[n];}
+  SDEC[n]=sndRaw(n).then(ab=>ab?new Promise(res=>{let done=false;const ok=b=>{if(!done){done=true;res(b);}},bad=e=>{if(!done){done=true;sndDiag(n,'çözülemedi: '+String(e&&(e.message||e.name)||e).slice(0,50));errLog('snd decode '+n+' '+(e&&(e.message||e.name)||e));res(null);}};try{const r=a.decodeAudioData(ab.slice(0),ok,bad);if(r&&r.catch)r.catch(bad);}catch(e){bad(e);}}):null).then(b=>{if(b){SBUF[n]=b;if(/^m_/.test(n))sndDiag(n,'ok '+Math.round(b.duration)+'sn');}else delete SDEC[n];return b;});return SDEC[n];}
 function sndPreload(){SNDN.forEach(sndRaw);}
 function sndWarm(){if(!AC)return;SNDN.forEach(sndDecode);}
 function sp(n,vol,rate,delay){
@@ -4750,6 +4759,7 @@ function openSettings(){
     let rows=ks.map(L=>{const x=st[L],tg=['','⚡','🔥'][tierOf(L)];return '<tr><td>'+L+tg+'</td><td>'+x.t+'</td><td>'+x.f+'</td><td>'+x.b+'</td><td>'+(x.w?'✅':'—')+'</td></tr>';}).join('');
     showModal(_t('<div class="em">📊</div><h2>Test istatistikleri</h2><div class="stbl"><table><tr><th>Bölüm</th><th>Deneme</th><th>Kayıp</th><th>Güçl.</th><th>Geçti</th></tr>')+(rows||_t('<tr><td colspan="5">Henüz veri yok</td></tr>'))+_t('</table></div><p class="note">Bu ekranın görüntüsünü bana gönder, zorluğu buna göre ayarlayalım.</p><button class="btn" id="stOk">Kapat</button>'));
     {const c=store.get('anc',{}),ks=Object.keys(c).sort((a,b)=>c[b]-c[a]);if(ks.length){const d=document.createElement('p');d.className='note';d.style.fontSize='11px';d.textContent=tt('Ölçüm kayıtları: ','Analytics events: ')+ks.slice(0,8).map(k=>k+' '+c[k]).join(' · ');$('stOk').before(d);}}
+    {const sd=store.get('snddiag',{}),ks=Object.keys(sd).sort();if(ks.length){const d=document.createElement('pre');d.style.cssText='font-size:10px;max-height:110px;overflow:auto;white-space:pre-wrap;text-align:left;background:#eef6ff;color:#163a5f;padding:6px;border-radius:8px';d.textContent=tt('Ses: ','Audio: ')+(AC?AC.state+' '+AC.sampleRate+'Hz':'yok')+'\n'+ks.map(k=>k+': '+sd[k]).join('\n');$('stOk').before(d);}}
     {const l=store.get('errlog',[]);if(l.length){const d=document.createElement('pre');d.style.cssText='font-size:10px;max-height:120px;overflow:auto;white-space:pre-wrap;text-align:left;background:#fff3f0;color:#8e1e18;padding:6px;border-radius:8px';d.textContent=l.join('\n');$('stOk').before(d);}}
     $('stOk').onclick=hideModal;
   };
@@ -4885,7 +4895,7 @@ function startMusic(){
   sndDecode(k).then(b=>{
     if(id!==musReq||!musicOn||document.hidden||!AC||AC.state!=='running')return;
     if(MUS&&MUS.k===k)return;
-    if(!b){if(!MUS)startSynth();return;}
+    if(!b){sndDiag('_muzik','yedek elektronik müzik ('+k+')');if(!MUS)startSynth();return;}
     try{
       const t=a.currentTime,g=a.createGain();g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(MUSV,t+1.6);g.connect(a.destination);
       const s=a.createBufferSource();s.buffer=b;s.loop=true;
@@ -4894,8 +4904,8 @@ function startMusic(){
       let off=MUSPOS[k]==null?b0:MUSPOS[k];if(off<b0||off>=le-.5)off=ls;
       s.start(t,off);
       fadeOutMus();
-      MUS={k,g,src:s,t0:t,off,ls,le};
-    }catch(e){if(!MUS)startSynth();}
+      MUS={k,g,src:s,t0:t,off,ls,le};sndDiag('_muzik','çalıyor: '+k);
+    }catch(e){errLog(e);sndDiag('_muzik','hata: '+String(e&&e.message||e).slice(0,50));if(!MUS)startSynth();}
   });
 }
 function stopMusic(){musReq++;fadeOutMus();}
@@ -5394,7 +5404,7 @@ function backBtn(){try{
 /* v1.46 Canlı güncelleme (Apple/Google onayı beklemeden): oyunun kodu ve görselleri tealbirdgames.com/ota/ferrytales'den
    güncellenir. Uygulama açılınca manifest kontrol edilir, sadece değişen dosyalar indirilir, oyuncu uygulamadan çıkıp dönünce yeni sürüm açılır.
    Yeni yerel eklenti gerektiren değişiklikler için manifestte native_min_ios / native_min_android (derleme numarası) yükseltilir. */
-const WEB_VER='1.57.0';
+const WEB_VER='1.57.1';
 const OTA_BASE='https://tealbirdgames.com/ota/ferrytales/';
 function verGT(a,b){const x=String(a).split('.').map(Number),y=String(b).split('.').map(Number);for(let i=0;i<3;i++){if((x[i]||0)>(y[i]||0))return true;if((x[i]||0)<(y[i]||0))return false;}return false;}
 async function otaCheck(){const U=plug('CapacitorUpdater');if(!U)return;
