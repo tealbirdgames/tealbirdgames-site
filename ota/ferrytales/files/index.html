@@ -2504,8 +2504,8 @@ function buzz(ms){if(!vibOn)return;try{const H=NATIVE()&&plug('Haptics');
     if(Array.isArray(ms)){let t=0;ms.forEach((v,k)=>{if(k%2===0)setTimeout(()=>hit(Math.min(v,60)),t);t+=v;});}else hit(ms);return;}
   navigator.vibrate&&navigator.vibrate(Array.isArray(ms)?ms.map(v=>Math.min(v,40)):Math.min(ms,40));}catch(e){}}
 /* gerçek sesler (ElevenLabs) — yüklenmezse eski sentez sesler devreye girer */
-const SNDV=1,SNDN=['tap','seat','no','horn','horn2','coin','magic','win','lose','combo','star','chest','unlock','gondola','water','ui'];
-const SNDVOL={tap:.55,seat:.55,no:.5,horn:.42,horn2:.46,coin:.5,magic:.55,win:.6,lose:.55,combo:.5,star:.5,chest:.6,unlock:.5,gondola:.5,water:.45,ui:.4};
+const SNDV=2,SNDN=['tap','seat','no','horn','horn2','coin','magic','win','lose','combo','star','chest','unlock','gondola','water','ui'];
+const SNDVOL={tap:.55,seat:.55,no:.5,horn:.26,horn2:.42,coin:.5,magic:.55,win:.6,lose:.55,combo:.5,star:.5,chest:.6,unlock:.5,gondola:.5,water:.45,ui:.4};
 const SRAW={},SBUF={},SDEC={},SLAST={};
 function sndRaw(n){if(!SRAW[n])SRAW[n]=fetch('assets/snd/'+n+'.mp3?v='+SNDV).then(r=>r.ok?r.arrayBuffer():null).catch(()=>null);return SRAW[n];}
 function sndDecode(n){const a=ac();if(!a)return Promise.resolve(null);if(SBUF[n])return Promise.resolve(SBUF[n]);if(SDEC[n])return SDEC[n];
@@ -5283,7 +5283,7 @@ function backBtn(){try{
 /* v1.46 Canlı güncelleme (Apple/Google onayı beklemeden): oyunun kodu ve görselleri tealbirdgames.com/ota/ferrytales'den
    güncellenir. Uygulama açılınca manifest kontrol edilir, sadece değişen dosyalar indirilir, oyuncu uygulamadan çıkıp dönünce yeni sürüm açılır.
    Yeni yerel eklenti gerektiren değişiklikler için manifestte native_min_ios / native_min_android (derleme numarası) yükseltilir. */
-const WEB_VER='1.54.1';
+const WEB_VER='1.54.2';
 const OTA_BASE='https://tealbirdgames.com/ota/ferrytales/';
 function verGT(a,b){const x=String(a).split('.').map(Number),y=String(b).split('.').map(Number);for(let i=0;i<3;i++){if((x[i]||0)>(y[i]||0))return true;if((x[i]||0)<(y[i]||0))return false;}return false;}
 async function otaCheck(){const U=plug('CapacitorUpdater');if(!U)return;
