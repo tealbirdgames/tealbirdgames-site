@@ -4883,8 +4883,9 @@ function playStep(s,t,loop){
 /* ---------- ses kilidi (iPhone dahil) ---------- */
 let SIL=null,audioReady=false;
 function silentLoop(){
-  try{if(navigator.audioSession)navigator.audioSession.type='playback';}catch(e){}
-  if(SIL)return;
+  // Uygulamada: 'ambient' = Spotify/Apple Music gibi uygulamaları durdurmaz, onlarla birlikte çalar; kilit ekranında oynatıcı açmaz.
+  try{if(navigator.audioSession)navigator.audioSession.type=NATIVE()?'ambient':'playback';}catch(e){}
+  if(SIL||NATIVE())return;
   try{
     const sr=8000,n=sr/2,buf=new ArrayBuffer(44+n*2),v=new DataView(buf),w=(o,x)=>{for(let i=0;i<x.length;i++)v.setUint8(o+i,x.charCodeAt(i));};
     w(0,'RIFF');v.setUint32(4,36+n*2,true);w(8,'WAVE');w(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,'data');v.setUint32(40,n*2,true);
@@ -5282,7 +5283,7 @@ function backBtn(){try{
 /* v1.46 Canlı güncelleme (Apple/Google onayı beklemeden): oyunun kodu ve görselleri tealbirdgames.com/ota/ferrytales'den
    güncellenir. Uygulama açılınca manifest kontrol edilir, sadece değişen dosyalar indirilir, oyuncu uygulamadan çıkıp dönünce yeni sürüm açılır.
    Yeni yerel eklenti gerektiren değişiklikler için manifestte native_min_ios / native_min_android (derleme numarası) yükseltilir. */
-const WEB_VER='1.54.0';
+const WEB_VER='1.54.1';
 const OTA_BASE='https://tealbirdgames.com/ota/ferrytales/';
 function verGT(a,b){const x=String(a).split('.').map(Number),y=String(b).split('.').map(Number);for(let i=0;i<3;i++){if((x[i]||0)>(y[i]||0))return true;if((x[i]||0)<(y[i]||0))return false;}return false;}
 async function otaCheck(){const U=plug('CapacitorUpdater');if(!U)return;
