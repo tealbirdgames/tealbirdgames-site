@@ -6,6 +6,7 @@
 // GET  /api/lb?pid=                                         -> {n, top:[{p,nick,lvl}], me:{rank,lvl,nick}|null, near:[...]}
 // POST /api/lb            {pid, nick, lvl, stars, plat}      -> aynı tablo
 // POST /api/lb/del        {pid}                              -> {ok}  (oyuncu tablodan çıkmak isterse)
+// POST /api/lb/report     {pid, p}                           -> {ok}  (p: şikâyet edilen oyuncunun kısa kimliği; 3 farklı şikâyette takma ad otomatiğe döner)
 
 const H = {
   'content-type': 'application/json; charset=utf-8',
@@ -58,6 +59,18 @@ const BAD = /(^|[^a-zçğıöşü])(amk|aq(?![a-z])|orospu|oç|piç|sik|yarra|g�
 const autoNick = (pid) => 'Kaptan ' + (1000 + (parseInt(pid.slice(-6).replace(/[^0-9a-f]/gi, '0'), 16) % 9000));
 // LB_MAX: oyundaki son bölüm + pay (yeni şehir eklenince artır). İlk kayıtta da bunun üstü sayılmaz.
 const LB_MAX = 150, LB_FIRST = 150;
+const REP_LIMIT = 3;
+let repReady = false;
+async function repInit(db) {
+  if (repReady) return;
+  await db.prepare('CREATE TABLE IF NOT EXISTS lb_rep (target TEXT NOT NULL, reporter TEXT NOT NULL, at INTEGER NOT NULL, PRIMARY KEY (target, reporter))').run();
+  repReady = true;
+}
+async function repCount(db, pid) {
+  await repInit(db);
+  const r = await db.prepare('SELECT COUNT(*) AS n FROM lb_rep WHERE target = ?').bind(pid).first();
+  return r ? r.n : 0;
+}
 const rowOut = (r) => ({ p: r.pid.slice(0, 6), nick: r.nick, lvl: r.lvl });
 
 async function lbBoard(db, pid) {
@@ -97,9 +110,20 @@ async function lbRoute(db, request, parts) {
     await db.prepare('DELETE FROM lb WHERE pid = ?').bind(b.pid).run();
     return j({ ok: true });
   }
+  if (parts.length === 2 && parts[1] === 'report' && request.method === 'POST') {
+    const p = typeof b.p === 'string' && /^[A-Za-z0-9_-]{6}$/.test(b.p) ? b.p : null;
+    if (!p || b.pid.slice(0, 6) === p) return bad('geçersiz');
+    const t = await db.prepare("SELECT pid FROM lb WHERE substr(pid, 1, 6) = ? LIMIT 1").bind(p).first();
+    if (!t) return j({ ok: true });
+    await repInit(db);
+    await db.prepare('INSERT OR IGNORE INTO lb_rep (target, reporter, at) VALUES (?, ?, ?)').bind(t.pid, b.pid, Date.now()).run();
+    if ((await repCount(db, t.pid)) >= REP_LIMIT)
+      await db.prepare('UPDATE lb SET nick = ? WHERE pid = ?').bind(autoNick(t.pid), t.pid).run();
+    return j({ ok: true });
+  }
   if (parts.length !== 1 || request.method !== 'POST') return bad('yok', 404);
   let nick = cleanNick(b.nick);
-  if (!nick || BAD.test(nick)) nick = autoNick(b.pid);
+  if (!nick || BAD.test(nick) || (await repCount(db, b.pid)) >= REP_LIMIT) nick = autoNick(b.pid);
   let lvl = int(b.lvl, 0, 100000);
   if (lvl !== null) lvl = Math.min(lvl, LB_MAX);
   const st = int(b.stars, 0, 100000) || 0;
