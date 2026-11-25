@@ -2947,15 +2947,17 @@ function warmAssets(){const L=[];sprLoad();PCN.forEach(c=>{L.push('assets/v4_'+c
 function snapshot(){G.hist.push({cells:G.cells.slice(),bench:G.bench.slice(),fi:G.fi,load:G.load});if(G.hist.length>30)G.hist.shift();}
 async function onTap(i){
   try{return await onTap0(i);}
-  catch(e){errLog(e);if(G){G.busy=false;G.dep=false;try{updateReach();}catch(_){}}try{if(T&&T.steps[T.idx].mode==='tap'&&typeof T.steps[T.idx].t==='number'&&!figs[T.steps[T.idx].t])setTimeout(tutNext,120);}catch(_){}}
+  catch(e){errLog(e);if(G){G.act=0;G.depRun=false;G.busy=false;G.dep=false;try{updateReach();}catch(_){}}try{if(T&&T.steps[T.idx].mode==='tap'&&typeof T.steps[T.idx].t==='number'&&!figs[T.steps[T.idx].t])setTimeout(tutNext,120);}catch(_){}}
 }
 function errLog(e){try{const l=store.get('errlog',[]);l.push(new Date().toISOString().slice(5,19)+' '+String(e&&(e.stack||e.message)||e).slice(0,300));store.set('errlog',l.slice(-12));}catch(_){}}
 window.addEventListener('error',e=>errLog(e.error||e.message));
 window.addEventListener('unhandledrejection',e=>errLog(e.reason));
 async function onTap0(i){
-  const DEP=!!(G&&G.dep&&!G.over&&!G.auto&&!T);/* v1.47: vapur giderken/gelirken iskeleden bekleme alanına atılabilir */
-  if(!DEP&&G&&G.busy&&!G.over&&!G.auto&&!T){G.qTap={i,t:Date.now()};return;}/* v1.46: animasyon sürerken gelen dokunuş kaybolmaz, hemen ardından işlenir */
-  if(!G||(G.busy&&!DEP)||G.over)return;
+  /* v1.57: dokunuşlar paralel işlenir — yolcu binerken, vapur kalkarken/gelirken de tahtadan yolcu gönderilebilir */
+  if(!G||G.over)return;
+  if(G.busy&&!(G.act>0))return;/* sihirbaz/geri al gibi özel işlemler sürerken bekle */
+  if(T&&G.busy)return;
+  const DEP=!!(G.dep&&!G.auto&&!T);
   const col=G.cells[i];if(col==null||col<0)return;
   const fig=figs[i];try{const kb=fig&&fig.querySelector('.kyb');if(kb){const r=relRect(kb);r.el=kb;KEYPOS[i]=r;}}catch(_){}
   if(T&&T.steps[T.idx]&&T.steps[T.idx].mode==='ok'){tutNext();}
@@ -2965,12 +2967,16 @@ async function onTap0(i){
   if(!can){shake(fig);if(p>=0&&figs[p])shake(figs[p]);sfx.no();if(G.cafe&&cafeLeft(G.cells,i)>0){const n=cafeLeft(G.cells,i);toast(tt('☕ '+n+' yolcu daha gidince kalkacak','☕ Gets up after '+n+' more leave'));}else if(isLocked(G.cells,i,G.locks)){lockLink(i);toast(tt('🔒 Kilitli! Çizgiyle gösterilen 🔑 anahtarlı yolcuyu çıkar','🔒 Locked! Send out the 🔑 key passenger shown by the line'));}else toast(_t('Önü kapalı!'));return;}
   const unit=p>=0?[i,p]:[i],fc=G.ferries[G.fi],kind=DEP?(benchFree()>=unit.length?2:0):legalMove(unit),fg=unit.map(j=>figs[j]);
   if(!kind){fg.forEach(f=>shake(f));sfx.no();toast(unit.length===2?tt('Grup ayrılmaz: 2 boş yer lazım!','Groups stay together: 2 free seats needed!'):_t('Bekleme alanı dolu!'));return;}
-  snapshot();if(!DEP)G.busy=true;if(T&&T.steps[T.idx].mode==='tap')hideCoach();
+  snapshot();G.act=(G.act||0)+1;G.busy=true;if(T&&T.steps[T.idx].mode==='tap')hideCoach();
   const lk=unit.length===2?famLinkFor(i):null;if(lk){const tk=lk._tk;[lk,tk].forEach(x=>{if(x)try{x.animate([{opacity:1},{opacity:0}],{duration:160,fill:'forwards'});}catch(e){}});setTimeout(()=>{lk.remove();if(tk)tk.remove();},170);}
-  unit.forEach(j=>{G.cells[j]=-1;delete figs[j];});fg.forEach(f=>{f.style.opacity='';f.style.pointerEvents='';});gondSpawn();
+  unit.forEach(j=>{G.cells[j]=-1;delete figs[j];});fg.forEach(f=>{f.style.opacity='';f.style.pointerEvents='';});
+  const wk=walkPlan(unit);gondSpawn();
+  try{
   if(kind===1){
     const seats=unit.map(()=>G.load++);updateReach();sfx.pick();
-    await Promise.all(fg.map((f,k)=>fly(f,center(seatEl(seats[k])),seatScale(),k*70).then(()=>{f.remove();fillSeat(seats[k]);})));
+    const pr=Promise.all(fg.map((f,k)=>walkTo(f,wk[k],center(seatEl(seats[k]))).then(()=>fly(f,center(seatEl(seats[k])),seatScale(),k*70)).then(()=>{f.remove();fillSeat(seats[k]);})));
+    G.bpend=G.bpend||new Set();G.bpend.add(pr);pr.finally(()=>G.bpend&&G.bpend.delete(pr)).catch(()=>{});
+    await pr;
     if(G.load===CAP)await departLoop();
   }else{
     const sl=unit.length===2?famSlots():[G.bench.indexOf(null)];
@@ -2978,28 +2984,55 @@ async function onTap0(i){
     G.bh.push({cells:unit.slice(),slots:sl,col});G.combo=0;
     updateReach();sfx.pick();
     if(!DEP&&unit.length===2&&col===fc)toast(tt('Vapurda 2 yer yoktu, grup beklemeye geçti','No room for 2 on the ferry, the group waits'));
-    const pr=Promise.all(fg.map((f,k)=>fly(f,seatPt(sl[k]),benchScale(),k*70)));if(DEP)(G.pend=G.pend||[]).push(pr);
+    const pr=Promise.all(fg.map((f,k)=>walkTo(f,wk[k],seatPt(sl[k])).then(()=>fly(f,seatPt(sl[k]),benchScale(),k*70))));
+    G.pend=G.pend||new Set();G.pend.add(pr);pr.finally(()=>G.pend&&G.pend.delete(pr)).catch(()=>{});
     await pr;
   }
-  if(DEP){updateBoosters();return;}
-  G.busy=false;updateBoosters();checkEnd();tutAfterTap();{const q=G.qTap;G.qTap=null;if(q&&q.i!==i&&Date.now()-q.t<900&&!G.over&&!T)setTimeout(()=>onTap(q.i),0);}maybeAuto();
+  }finally{G.act=Math.max(0,(G.act||1)-1);}
+  settleTaps();
 }
+function settleTaps(){if(!G||G.act>0||G.depRun)return;G.busy=false;updateBoosters();checkEnd();tutAfterTap();maybeAuto();}
+/* v1.57: yolcu tahtadaki boş kareler üzerinden yürüyerek çıkar (engellerin etrafından dolaşır) */
+function walkPlan(unit){const out=[];try{if(!G||G.auto)return out;const R=G.rows,C=G.cols,W=CURWATER,n=G.cells.length,free=j=>G.cells[j]===-1&&!(W&&W.has(j));
+  for(const s of unit){if(s<C){out.push([s]);continue;}
+    const d=new Int32Array(n).fill(-1),q=[s];d[s]=0;for(let h=0;h<q.length;h++){const a=q[h];for(const b of nbrs(a,R,C))if(d[b]<0&&free(b)){d[b]=d[a]+1;q.push(b);}}
+    let best=-1,bc=1e9;for(let c=0;c<C;c++)if(d[c]>=0){const cost=d[c]+Math.abs(c-(s%C))*.15;if(cost<bc){bc=cost;best=c;}}
+    if(best<0){out.push(null);continue;}
+    const e=new Int32Array(n).fill(-1),q2=[best];e[best]=0;for(let h=0;h<q2.length;h++){const a=q2[h];for(const b of nbrs(a,R,C))if(e[b]<0&&(free(b)||b===s)){e[b]=e[a]+1;q2.push(b);}}
+    const path=[s];let cur=s,dir=0,g=0;while(cur!==best&&g++<n){let nx=-1;for(const b of nbrs(cur,R,C)){if(e[b]>=0&&e[b]===e[cur]-1){if(nx<0||b-cur===dir)nx=b;}}if(nx<0)break;dir=nx-cur;path.push(nx);cur=nx;}
+    out.push(path);}
+}catch(e){}return out;}
+async function walkTo(el,path,dest){if(!el||!path||!path.length||!G||G.auto)return;try{
+  const p0=cellCenter(path[0]),pts=path.map(j=>cellCenter(j)),top=pts[pts.length-1],gap=Math.max(cs*.55,(dest&&dest.y<top.y)?Math.min(cs*.9,(top.y-dest.y)*.35):cs*.55);
+  pts.push({x:top.x,y:top.y-gap});
+  const steps=pts.length-1;if(steps<1)return;const st=Math.max(42,Math.min(78,560/steps)),dur=st*steps;
+  const fr=pts.map((p,k)=>({translate:(p.x-p0.x)+'px '+(p.y-p0.y)+'px',offset:k/steps}));
+  const z=el.style.zIndex;el.style.zIndex=900;el.classList.add('walk');
+  const a=el.animate(fr,{duration:dur,easing:'linear',fill:'forwards'});
+  let w=null;try{w=el.animate([{rotate:'0deg'},{rotate:'-7deg',offset:.25},{rotate:'0deg',offset:.5},{rotate:'7deg',offset:.75},{rotate:'0deg'}],{duration:Math.max(180,st*2),iterations:Math.max(1,Math.ceil(dur/Math.max(180,st*2)))});}catch(_){}
+  try{sfx.step&&sfx.step();}catch(_){}
+  await a.finished.catch(()=>{});
+  const end=pts[pts.length-1];el.style.transition='none';el.style.left=(end.x-figSize/2)+'px';el.style.top=(end.y-figSize/2)+'px';a.cancel();if(w)w.cancel();void el.offsetWidth;el.style.transition='';el.style.zIndex=z;el.classList.remove('walk');
+}catch(e){}}
 async function departLoop(){
-  while(G.load===CAP){G.dep=true;
+  if(G.depRun)return;G.depRun=true;try{
+  while(G.load===CAP){if(G.bpend&&G.bpend.size)await Promise.all([...G.bpend]);G.dep=true;
     await wait(G.auto?60:150);sfx.horn(G.fi>=G.ferries.length-1);if(!G.auto&&psOwnsCos('horn')){if(psOwnsCos('horn_yeniyil')&&(psTheme().fw||!psOwnsCos('horn_kis')))[0,.12,.24,.36,.6].forEach((d,k)=>tone([523,659,784,1047,1319][k],k===4?.4:.16,'square',.035,0,.55+d));else [0,.16,.32,.5].forEach((d,k)=>tone([784,988,1175,1568][k],.22,'triangle',.06,0,.55+d));}
     G.combo=(G.combo||0)+1;if(G.combo>=2&&!G.auto&&G.fi<G.ferries.length-1){try{sfx.combo(Math.min(1.3,1+(G.combo-2)*.08));}catch(e){}const W=[tt('Güzel!','Nice!'),tt('Harika!','Great!'),tt('Süper!','Super!'),tt('Muhteşem!','Awesome!')];const el=praiseWord(W[Math.min(3,G.combo-2)]+(G.combo>=3?' x'+G.combo:''),false);try{const r=relRect(ferryEl);el.style.top=(r.y+r.h*.05)+'px';el.style.left=Math.max(80,Math.min(app.clientWidth-80,r.x+r.w/2))+'px';el.animate([{transform:'translate(-50%,10px) scale(.4)',opacity:0},{transform:'translate(-50%,-6px) scale(1.15)',opacity:1,offset:.3},{transform:'translate(-50%,-14px) scale(1)',opacity:1,offset:.75},{transform:'translate(-50%,-40px) scale(.9)',opacity:0}],{duration:1100,easing:'ease-out',fill:'forwards'});tone(880+G.combo*60,.07,'triangle',.05);}catch(e){}setTimeout(()=>el.remove(),1150);}
     await ferryOut();
     G.fi++;G.load=0;try{wkAdd('ferry',1);wkAdd('pax',CAP);}catch(e){}if(G.water&&G.water.length){setWater();waterUI();try{updateReach();}catch(e){}if(G.fi<G.ferries.length)waterFx();}
     if(G.brg||G.tul){const wasUp=CURWATER&&G.brg&&G.brg.cells.some(c=>CURWATER.has(c));setWater();brgUI();tulShift();try{updateReach();}catch(e){}if(G.brg&&G.fi<G.ferries.length&&wasUp!==brgUp(G.fi))try{sfx.unlock();}catch(e){}}
     if(G.fi>=G.ferries.length){G.dep=false;updateQueue();return;}
-    await ferryIn(G.ferries[G.fi]);G.dep=false;if(G.pend&&G.pend.length){const pp=G.pend;G.pend=[];await Promise.all(pp);}updateQueue();
+    await ferryIn(G.ferries[G.fi]);G.dep=false;if(G.pend&&G.pend.size)await Promise.all([...G.pend]);updateQueue();
     const c=G.ferries[G.fi],jobs=[];
     const board=k=>{G.bh=G.bh.filter(h=>!h.slots.includes(k));const f=benchFigs[k];benchFigs[k]=null;G.bench[k]=null;G.bf[k]=-1;const seat=G.load++;
         jobs.push(fly(f,center(seatEl(seat)),seatScale(),jobs.length*90).then(()=>{f.remove();fillSeat(seat);}));};
     for(let k=0;k<G.bench.length;k++){const k2=G.bf[k];if(G.bench[k]===c&&k2>=0&&k2>k&&G.load+2<=CAP){board(k);board(k2);}}
     for(let k=0;k<G.bench.length&&G.load<CAP;k++){if(G.bench[k]===c&&!(G.bf[k]>=0))board(k);}
     await Promise.all(jobs);updateReach();
+    if(G.bpend&&G.bpend.size)await Promise.all([...G.bpend]);
   }
+  }finally{G.depRun=false;}
 }
 function maybeAuto(){
   return;/* v1.30: oyuncu son yolcuları kendisi bindirir */
@@ -4967,7 +5000,7 @@ function banner(L){
 function pickFig(e){if(!G||G.over)return -1;try{const el=document.elementFromPoint(e.clientX,e.clientY),hf=el&&el.closest&&el.closest('.fig');if(hf&&hf.dataset.i!=null){const hk=+hf.dataset.i;if(figs[hk]===hf&&hf.classList.contains('ok')&&!hf.classList.contains('lockd'))return hk;}}catch(_){}const a=app.getBoundingClientRect(),x=e.clientX-a.left,y=e.clientY-a.top,R=cs*.95;let best=-1,bd=1e9,bok=-1,bdo=1e9;
   for(const k in figs){const f=figs[k];if(!f||f.dataset.i==null)continue;const c=cellCenter(+k),d=Math.hypot(c.x-x,(c.y+cs*.12)-y);if(d>R)continue;if(d<bd){bd=d;best=+k;}if(f.classList.contains('ok')&&!f.classList.contains('lockd')&&d<bdo){bdo=d;bok=+k;}}
   return bok>=0&&bdo<R?bok:best;}
-function tapAt(e){if(!G||G.busy||G.over)return;if(gondHit(e))return;const i=pickFig(e);if(i<0)return;e.preventDefault();ac();onTap(i);}
+function tapAt(e){if(!G||G.over||(G.busy&&!(G.act>0))||(T&&G.busy))return;if(gondHit(e))return;const i=pickFig(e);if(i<0)return;e.preventDefault();ac();onTap(i);}
 let PD=null;
 function downAt(e){if(PAN.on&&e.isPrimary!==false){PD={x:e.clientX,y:e.clientY,px:PAN.x,moved:false};return;}tapAt(e);}
 stage.addEventListener('pointerdown',e=>{const f=e.target.closest('.fig');if(f&&f.dataset.i==null)return;downAt(e);});
@@ -5361,7 +5394,7 @@ function backBtn(){try{
 /* v1.46 Canlı güncelleme (Apple/Google onayı beklemeden): oyunun kodu ve görselleri tealbirdgames.com/ota/ferrytales'den
    güncellenir. Uygulama açılınca manifest kontrol edilir, sadece değişen dosyalar indirilir, oyuncu uygulamadan çıkıp dönünce yeni sürüm açılır.
    Yeni yerel eklenti gerektiren değişiklikler için manifestte native_min_ios / native_min_android (derleme numarası) yükseltilir. */
-const WEB_VER='1.56.0';
+const WEB_VER='1.57.0';
 const OTA_BASE='https://tealbirdgames.com/ota/ferrytales/';
 function verGT(a,b){const x=String(a).split('.').map(Number),y=String(b).split('.').map(Number);for(let i=0;i<3;i++){if((x[i]||0)>(y[i]||0))return true;if((x[i]||0)<(y[i]||0))return false;}return false;}
 async function otaCheck(){const U=plug('CapacitorUpdater');if(!U)return;
