@@ -7,6 +7,11 @@
 // POST /api/lb            {pid, nick, lvl, stars, plat}      -> aynı tablo
 // POST /api/lb/del        {pid}                              -> {ok}  (oyuncu tablodan çıkmak isterse)
 // POST /api/lb/report     {pid, p}                           -> {ok}  (p: şikâyet edilen oyuncunun kısa kimliği; 3 farklı şikâyette takma ad otomatiğe döner)
+// v1.58 Pano: POST /api/oynama, /api/oynama-sil (yalnız oynanış verisine izin veren oyuncular) · GET /api/pano-* (x-pano-anahtar; PANO_ANAHTAR gizli ortam değişkeni)
+import { panoIsle, PANO_YOLLARI } from '../_pano/pano.mjs';
+import { semaKur } from '../_pano/sema.mjs';
+import { oynamaYaz, oynamaSil } from '../_pano/oynama.mjs';
+import { adGecmisYaz } from '../_pano/adgecmis.mjs';
 
 const H = {
   'content-type': 'application/json; charset=utf-8',
@@ -130,7 +135,8 @@ async function lbRoute(db, request, parts) {
   const plat = ['ios', 'android', 'web'].includes(b.plat) ? b.plat : 'web';
   if (lvl === null) return bad('geçersiz');
   const now = Date.now();
-  const old = await db.prepare('SELECT lvl, updated FROM lb WHERE pid = ?').bind(b.pid).first();
+  const old = await db.prepare('SELECT lvl, updated, nick FROM lb WHERE pid = ?').bind(b.pid).first();
+  if (old && old.nick !== nick) { try { await semaKur(db); await adGecmisYaz(db, b.pid, old.nick, nick, now); } catch (e) {} }
   if (!old) {
     lvl = Math.min(lvl, LB_FIRST);
     await db
@@ -156,9 +162,27 @@ export async function onRequest({ request, env, params }) {
   const db = env.DB;
   if (!db) return bad('db yok', 500);
   const parts = Array.isArray(params.path) ? params.path : [params.path].filter(Boolean);
+  const yol = '/api/' + parts.join('/');
+  if (PANO_YOLLARI.includes(yol)) {      // pano: yalnız okur, aynı kökenden çağrılır (CORS yok)
+    const PH = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff', 'referrer-policy': 'no-referrer', 'x-robots-tag': 'noindex, nofollow' };
+    const baslik = {}; request.headers.forEach((v, k) => { baslik[k.toLowerCase()] = v; });
+    const ayar = { panoAnahtar: env.PANO_ANAHTAR || '', yoneticiAnahtar: '', bolumSayisi: Number(env.BOLUM_SAYISI) || 120, saklamaGun: 180, reklam: { bagli: false, eksik: ['APPLE_ADS_*'] } };
+    try {
+      await semaKur(db);
+      const o = await panoIsle({ yontem: request.method, yol, sorgu: Object.fromEntries(new URL(request.url).searchParams), baslik }, db, ayar, Date.now());
+      return new Response(JSON.stringify(o.govde), { status: o.durum, headers: PH });
+    } catch (e) { return new Response(JSON.stringify({ ok: false, hata: 'sunucu', mesaj: 'Sunucu hatası.' }), { status: 500, headers: PH }); }
+  }
 
   try {
     if (parts[0] === 'lb') return await lbRoute(db, request, parts);
+    if ((parts[0] === 'oynama' || parts[0] === 'oynama-sil') && parts.length === 1 && request.method === 'POST') {
+      const ct = Number(request.headers.get('content-length') || 0); if (ct > 16000) return bad('büyük', 413);
+      const b = await request.json().catch(() => null);
+      await semaKur(db);
+      const o = parts[0] === 'oynama' ? await oynamaYaz(db, b, (request.cf && request.cf.country) || null, Date.now()) : await oynamaSil(db, b);
+      return j(o.govde, o.durum);
+    }
 
     // POST /api/ch
     if (parts.length === 1 && parts[0] === 'ch' && request.method === 'POST') {

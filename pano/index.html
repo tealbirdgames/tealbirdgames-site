@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121b2e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pano">
+<meta name="format-detection" content="telephone=no">
+<title>Vapura Yetiş · Canlı Pano</title>
+<link rel="manifest" href="/pano/manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="/pano/simge-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/pano/simge-180.png">
+<link rel="stylesheet" href="/pano/pano.css?v=20261126ul1">
+<script src="/pano/pano.js?v=20261126ul1" defer></script>
+</head>
+<body>
+<header class="ust">
+  <div class="ust-ic">
+    <div class="marka">
+      <img src="/pano/simge-192.png" alt="" width="34" height="34">
+      <div><h1 id="baslik">Vapura Yetiş</h1><span class="marka-alt">Canlı pano</span></div>
+    </div>
+    <div class="oyun" role="group" aria-label="Oyun seç">
+      <button type="button" data-oyun="ks" aria-pressed="true">Vapura Yetiş</button>
+      <button type="button" data-oyun="vy" aria-pressed="false">Knock Shot</button>
+    </div>
+    <div class="durum" id="durum" hidden><span class="durum-yazi"><span class="dot" id="nokta"></span><span id="durumYazi"></span></span><button type="button" class="dugme kucuk" id="yenile">Yenile</button></div>
+  </div>
+  <nav class="sekmeler" id="sekmeler" aria-label="Bölümler" hidden>
+    <button type="button" data-sekme="genel" aria-current="page">Genel bakış</button>
+    <button type="button" data-sekme="oyuncular">Oyuncular</button>
+    <button type="button" data-sekme="adlar">İsim değişiklikleri <span class="rozet" id="adRozet" hidden></span></button>
+    <button type="button" data-sekme="bolumler">Bölümler</button>
+    <button type="button" data-sekme="reklam">Reklam ve gelir</button>
+    <button type="button" data-sekme="siralama">Sıralama</button>
+  </nav>
+</header>
+
+<noscript><p class="tek card">Panoyu görmek için JavaScript açık olmalı.</p></noscript>
+
+<div class="uyari" id="uyari" role="alert" hidden><span id="uyariYazi"></span><button type="button" class="dugme kucuk" id="tekrar">Tekrar dene</button></div>
+
+<!-- Anahtar girişi -->
+<section class="card tek" id="giris" hidden>
+  <h2>Panoyu aç</h2>
+  <p class="note">Pano anahtarını yaz. Anahtar yalnız bu cihazda kalır.</p>
+  <form id="girisForm" autocomplete="on">
+    <input type="password" id="anahtar" placeholder="Pano anahtarı" aria-label="Pano anahtarı" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false" required>
+    <label class="sec-kutu"><input type="checkbox" id="hatirla" checked> Bu cihazda hatırla</label>
+    <button type="submit" class="dugme ana" id="baglan">Bağlan</button>
+  </form>
+  <p class="giris-mesaj" id="girisMesaj" role="alert"></p>
+</section>
+
+<!-- Knock Shot (Onur) -->
+<section class="card tek" id="vapur" hidden>
+  <h2>Knock Shot: Onur'un panosunda</h2>
+  <p class="note">Knock Shot'ın sayıları Onur'un kendi panosunda. Bu pano yalnız Vapura Yetiş verisini okur.</p>
+</section>
+
+<main id="pano" hidden>
+  <div class="arac" id="arac">
+    <div>
+      <h2 class="sayfa-baslik" id="gunBaslik">Bugün</h2>
+      <p class="note" id="okNot"></p>
+    </div>
+    <div class="gunsec">
+      <button type="button" class="dugme" id="geri" aria-label="Önceki gün">‹</button>
+      <input type="date" id="gun" aria-label="Gün seç">
+      <button type="button" class="dugme" id="ileri" aria-label="Sonraki gün">›</button>
+      <button type="button" class="dugme" id="bugunB">Bugün</button>
+    </div>
+  </div>
+
+  <!-- ═════════ GENEL BAKIŞ ═════════ -->
+  <div class="sayfa" data-sayfa="genel">
+    <div class="kpis" id="kpis"></div>
+    <div class="kpis ikinci" id="kpis2"></div>
+    <button type="button" class="rk-ozet" id="rkOzetKutu" data-git="reklam" aria-label="Bugün oyundaki reklamlar — Reklam ve gelir sekmesini aç"></button>
+    <div class="izgara iki-bir">
+      <section class="card">
+        <div class="kart-ust"><div><h3>Son 14 gün · oynayan kişi</h3><p class="note">Bir güne dokun, pano o güne dönsün.</p></div>
+          <div class="lejant"><span><i class="l-eski"></i>Geri gelen</span><span><i class="l-yeni"></i>İlk kez oynayan</span></div></div>
+        <p class="secili-ozet" id="seciliOzet" aria-live="polite"></p>
+        <div class="bars" id="bars"></div>
+        <div class="axis" id="axis"></div>
+      </section>
+      <section class="card">
+        <div class="kart-ust"><div><h3>Son isim değişiklikleri</h3><p class="note">Eski ad → yeni ad</p></div><button type="button" class="baglanti" data-git="adlar">Tümü ›</button></div>
+        <ul class="liste" id="adOzetListe"></ul>
+      </section>
+    </div>
+    <div class="izgara">
+      <section class="card">
+        <h3 id="modBaslik">Modlar · bugün</h3>
+        <p class="note">Bir kişi birkaç modda oynayabilir.</p>
+        <table><thead><tr><th>Mod</th><th>Oynayan</th><th>Oynanan bölüm</th></tr></thead><tbody id="modlar"></tbody></table>
+      </section>
+      <section class="card">
+        <h3>Sürümler · son 30 gün</h3>
+        <p class="note">Sürüm değiştiren kişi iki satırda da görünür.</p>
+        <table><thead><tr><th>Sürüm</th><th>Oyuncu</th><th>Oynanan bölüm</th></tr></thead><tbody id="surum"></tbody></table>
+      </section>
+    </div>
+    <section class="card" id="ulkeKart">
+      <div class="kart-ust"><div><h3>Ülkeler</h3><p class="note">Ülke 26.11'den beri tutuluyor: daha önce oynayıp o günden beri gelmeyenler burada yok, yeniden oynayınca görünür. Yalnız ülke (Cloudflare'in verdiği 2 harfli kod); IP ya da şehir saklanmaz.</p></div><span class="note" id="ulOzet"></span></div>
+      <div class="ul-kap"><table class="ul"><thead><tr><th class="sol"><button type="button" data-sira="ulk:ad">Ülke</button></th><th><button type="button" data-sira="ulk:toplam">Oyuncu</button></th><th><button type="button" data-sira="ulk:aktif7">Son 7 gün aktif</button></th></tr></thead><tbody id="ulkeler"></tbody></table></div>
+    </section>
+  </div>
+
+  <!-- ═════════ OYUNCULAR ═════════ -->
+  <div class="sayfa" data-sayfa="oyuncular" hidden>
+    <div class="kpis dort" id="oyKpis"></div>
+    <section class="card">
+      <div class="canli-bas"><h3 id="canliBaslik">Şu an oyunda</h3><span class="note" id="canliSaat"></span></div>
+      <div class="canli-ozet" id="canliOzet"></div>
+      <div class="canli-serit" id="canliSerit"></div>
+      <p class="note">“OYUNDA”: son 10 dakikada kaydolan ya da yeni bölüm geçen. Liste son 5 saati gösterir. Eski bölümü yeniden oynayan ya da aynı bölümde uzun takılan görünmez.</p>
+      <div class="kaydir kisa"><ul class="liste" id="canliListe"></ul></div>
+    </section>
+    <section class="card" id="gelenler">
+      <div class="kart-ust"><div><h3>Yeni kayıtlar <span class="dur" id="glDilim"></span></h3>
+        <p class="note">Oyunu ilk kez açıp ad alan herkes (oynasın oynamasın). “Bölüm 1” yazanlar hiç bölüm geçmedi. Adını değiştirenlerde ilk ad → şimdiki ad görünür (26 Kasım’dan beri).</p></div>
+        <div class="secim" role="group" aria-label="Kayıt aralığı">
+          <button type="button" data-gl="1" aria-pressed="true">Bugün</button>
+          <button type="button" data-gl="d" aria-pressed="false">Dün</button>
+          <button type="button" data-gl="7" aria-pressed="false">7 gün</button>
+          <button type="button" data-gl="30" aria-pressed="false">30 gün</button>
+        </div></div>
+      <div class="kpis dort ic" id="glKpis"></div>
+      <div class="scroll gl-tablo" id="glTabloKutu"><table><thead><tr><th>Gün</th><th>Yeni kayıt</th><th>İlk skorunu yazan</th><th>O gün oynayan</th><th>Adını değiştirmemiş</th></tr></thead><tbody id="glTablo"></tbody></table></div>
+      <div class="kart-ust alt"><h4 id="glListeBaslik">Yeni oyuncular</h4>
+        <label class="sec-kutu"><input type="checkbox" id="glOneri"> Yalnız adını hiç değiştirmemişler</label></div>
+      <div class="sirala" id="glSira"></div>
+      <div class="kaydir"><ul class="liste" id="glListe"></ul></div>
+      <div class="dugmeler" id="glDugmeler"></div>
+      <p class="note alt-not" id="glNot">Saatler Türkiye saati. İndirme sayısı ve platform (iOS / Android) sunucuda yok: <a href="https://appstoreconnect.apple.com/trends/sales" target="_blank" rel="noopener noreferrer">App Store Connect</a> · <a href="https://play.google.com/console" target="_blank" rel="noopener noreferrer">Play Console</a>. Sürüm, son bölüm kaydındaki etikettir.</p>
+    </section>
+    <div class="izgara">
+      <section class="card">
+        <h3 id="yeniBaslik">Bugün ilk kez oynayanlar</h3>
+        <p class="note">İlk kez <b>bölüm oynayan</b> ve oynanış verisi paylaşmaya izin verenler. Oyunu açıp hiç oynamayanlar burada yok; onlar üstteki “Yeni kayıtlar”da.</p>
+        <div class="sirala" id="yeniSira"></div>
+        <div class="kaydir"><ul class="liste" id="yeniListe"></ul></div>
+        <div class="dugmeler" id="yeniDugmeler"></div>
+      </section>
+      <section class="card">
+        <h3 id="oynBaslik">Bugün oynayanlar</h3>
+        <p class="note">En çok oynayan en üstte.</p>
+        <div class="ara"><input type="search" id="ara" placeholder="Ad ya da kod ara" aria-label="Seçili günde oynayanlarda ara" autocomplete="off" maxlength="40"></div>
+        <div class="sirala" id="oynSira"></div>
+        <div class="kaydir"><ul class="liste" id="oynListe"></ul></div>
+        <div class="dugmeler" id="oynDugmeler"></div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ═════════ İSİM DEĞİŞİKLİKLERİ ═════════ -->
+  <div class="sayfa" data-sayfa="adlar" hidden>
+    <div class="arac tek-satir"><div><h2 class="sayfa-baslik">İsim değişiklikleri</h2><p class="note" id="adNot"></p></div></div>
+    <div class="kpis dort" id="adKpis"></div>
+    <section class="card">
+      <h3>Son 30 gün · gün gün</h3>
+      <div class="minibars" id="adBars"></div>
+    </section>
+    <section class="card">
+      <div class="kart-ust"><div><h3 id="adBaslik">Kim, hangi adı ne yaptı</h3><p class="note">En yeni en üstte. Satıra dokun, oyuncu kartı açılsın.</p></div></div>
+      <ul class="liste" id="adListe"></ul>
+      <div class="dugmeler" id="adDugmeler"></div>
+    </section>
+  </div>
+
+  <!-- ═════════ BÖLÜMLER ═════════ -->
+  <div class="sayfa" data-sayfa="bolumler" hidden>
+    <div class="izgara iki-bir">
+      <section class="card">
+        <div class="kart-ust"><div><h3>Oyuncular nerede kalıyor</h3><p class="note" id="huniNot"></p></div>
+          <label class="sec-kutu"><input type="checkbox" id="yalnizGun"> Yalnız seçili gün</label></div>
+        <div class="scroll uzun"><table><thead><tr><th><button type="button" data-sira="huni:bolum">Bölüm</button></th><th><button type="button" data-sira="huni:oynayan">Oynayan</button></th><th><button type="button" data-sira="huni:kazanmaYuzde">Kazanma oranı</button></th><th><button type="button" data-sira="huni:birakan">Yarıda bırakan</button></th><th><button type="button" data-sira="huni:ortYildiz">Ort. yıldız</button></th></tr></thead><tbody id="huni"></tbody></table></div>
+      </section>
+      <section class="card">
+        <h3>En zor bölümler</h3>
+        <p class="note">Son 30 günde en az 10 kez oynananlardan en az kazanılan 8 bölüm.</p>
+        <table class="hard"><thead><tr><th>Bölüm</th><th>Oynanma</th><th>Kazanma</th><th>Ort. süre (sn)</th></tr></thead><tbody id="zor"></tbody></table>
+      </section>
+    </div>
+  </div>
+
+  <!-- ═════════ REKLAM VE GELİR ═════════ -->
+  <div class="sayfa" data-sayfa="reklam" hidden>
+    <section class="card" id="oyunReklam">
+      <div class="kart-ust"><div><h3>Oyundaki reklamlar <span class="dur" id="roDurum"></span></h3><p class="note">Yalnız oynanış kaydına izin veren oyuncular. Sayıları oyun bildirir; gerçek gösterim ve gelir AdMob’da.</p></div>
+        <div class="secim" role="group" aria-label="Oyundaki reklamlar aralığı">
+          <button type="button" data-ro="1" aria-pressed="true">Bugün</button>
+          <button type="button" data-ro="7" aria-pressed="false">7 gün</button>
+          <button type="button" data-ro="30" aria-pressed="false">30 gün</button>
+        </div></div>
+      <div id="roGovde"><p class="bos">Yükleniyor…</p></div>
+      <div class="tahmin">
+        <h4>TAHMİNİ gelir <span class="etiket-tahmin">TAHMİN — gerçek sayı AdMob’da</span></h4>
+        <p class="note">Bin gösterim kazancını (eBGBM) AdMob’dan bakıp yaz. Değerler yalnız bu cihazda saklanır, sunucuya gitmez. Hesap: gösterim × değer / 1000.</p>
+        <div class="tahmin-giris">
+          <label>Geçiş bin gösterim kazancı<input type="text" inputmode="decimal" id="ecpmGecis" placeholder="ör. 100" autocomplete="off" maxlength="10"></label>
+          <label>Ödüllü bin gösterim kazancı<input type="text" inputmode="decimal" id="ecpmOdullu" placeholder="ör. 100" autocomplete="off" maxlength="10"></label>
+        </div>
+        <div id="roTahmin" aria-live="polite"></div>
+      </div>
+    </section>
+    <section class="card" id="reklam">
+      <div class="kart-ust"><div><h3>Apple Ads <span class="dur" id="rkDurum"></span></h3></div>
+        <div class="secim" role="group" aria-label="Apple Ads aralığı">
+          <button type="button" data-rk="7" aria-pressed="true">7 gün</button>
+          <button type="button" data-rk="30" aria-pressed="false">30 gün</button>
+        </div></div>
+      <div id="rkGovde"><p class="bos">Yükleniyor…</p></div>
+    </section>
+    <section class="card">
+      <h3>Gelir</h3>
+      <p class="note">AdMob ve satışlar panoya henüz bağlı değil. Sayılar şimdilik bu panellerde:</p>
+      <div class="links">
+        <a href="https://admob.google.com/v2/home" target="_blank" rel="noopener noreferrer">AdMob <span>reklam geliri</span></a>
+        <a href="https://appstoreconnect.apple.com/trends/sales" target="_blank" rel="noopener noreferrer">App Store Trends <span>indirme ve satış</span></a>
+        <a href="https://appstoreconnect.apple.com/apps/6837946675/analytics/overview?dateSpec=d7" target="_blank" rel="noopener noreferrer">App Store Analytics <span>sayfa ve dönüşüm</span></a>
+        <a href="https://play.google.com/console" target="_blank" rel="noopener noreferrer">Play Console <span>Android</span></a>
+        <a href="https://ads.apple.com/" target="_blank" rel="noopener noreferrer">Apple Ads <span>kampanya raporu</span></a>
+      </div>
+    </section>
+  </div>
+
+  <!-- ═════════ SIRALAMA ═════════ -->
+  <div class="sayfa" data-sayfa="siralama" hidden>
+    <section class="card">
+      <div class="kart-ust"><div><h3>Sıralama <span id="siraSayi" class="dur"></span></h3><p class="note">Oyunda ad yazan herkes görünür. En ileride olan en üstte.</p></div></div>
+      <div class="ara yan">
+        <input type="search" id="sAra" placeholder="Adın başı ya da kod ara" aria-label="Sıralamada ara" autocomplete="off" maxlength="40">
+        <label class="sec-kutu"><input type="checkbox" id="yalnizYeni"> Yalnız seçili günde yeni gelenler</label>
+      </div>
+      <ul class="liste" id="siraListe"></ul>
+      <div class="dugmeler" id="siraDugmeler"></div>
+    </section>
+  </div>
+
+  <footer class="alt">
+    <p class="note">Günlük sayılara ve oyuncu kartlarına yalnız veri paylaşmaya izin veren oyuncular girer; indirme sayısı daha yüksek olabilir. <span id="ilkNot">“İlk geldiği gün”, sunucuda saklanan kayıtlardaki ilk gündür.</span></p>
+    <p class="note">Sayılar kendiliğinden yenilenmez: panoyu açınca, panoya geri dönünce (en az 2 dakika sonra) ve “Yenile”ye basınca yenilenir.</p>
+    <button type="button" class="dugme kucuk" id="unut">Anahtarı unut</button>
+  </footer>
+</main>
+
+<div class="donus" id="donus" hidden><span id="donusYazi"></span><button type="button" id="donusB">Bugüne dön</button></div>
+
+<dialog id="kart" aria-labelledby="kartAd"></dialog>
+</body>
+</html>

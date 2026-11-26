@@ -1,0 +1,16 @@
+{
+  "id": "/pano/",
+  "name": "Tealbird Pano",
+  "short_name": "Pano",
+  "lang": "tr",
+  "start_url": "/pano/",
+  "scope": "/pano/",
+  "display": "standalone",
+  "background_color": "#cfe8ff",
+  "theme_color": "#12305c",
+  "icons": [
+    { "src": "/pano/simge-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/pano/simge-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/pano/simge-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
