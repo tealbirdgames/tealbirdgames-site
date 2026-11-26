@@ -2457,7 +2457,7 @@ function livesModal(then){
     '<button class="btn alt" id="lvX">'+(lives?_t('Tamam'):_t('Bekleyeceğim'))+'</button>');
   $('lvX').onclick=()=>{hideModal();};
   if(lives<MAXLIFE){
-    $('lvAd').onclick=()=>fakeAd(()=>{addLife(1);hideModal();toast(_t('+1 can ❤️'),true);if(then&&lives>0)then();});
+    $('lvAd').onclick=()=>fakeAd(()=>{addLife(1);hideModal();toast(_t('+1 can ❤️'),true);if(then&&lives>0)then();},'can');
     $('lvCoin').onclick=()=>{if(coins<REFILL_PRICE){sfx.no();toast(_t('Yeterli altın yok'));return;}setCoins(coins-REFILL_PRICE,true);sfx.coin();addLife(MAXLIFE);hideModal();toast(_t('Canlar doldu ❤️'),true);if(then)then();};
   }
 }
@@ -2805,8 +2805,16 @@ function track(ev,p){try{p=p||{};
     /* v1.35: Firebase'in kendine ayırdığı olay adları başka adla gönderilir; değerler metin/sayı olmalı */
     const fe=FA_REN[ev]||ev,fp={};for(const k in p){const v=p[k];if(v==null)continue;fp[k]=(typeof v==='number')?v:(typeof v==='boolean'?(v?1:0):String(v).slice(0,100));}
     FA.logEvent({name:fe,params:fp}).catch(()=>{});}
-  const q=store.get('anq',[]);q.push(Object.assign({e:ev,t:Date.now()},p));store.set('anq',q.slice(-400));
+  try{pvTrack(ev,p);}catch(_){}const q=store.get('anq',[]);q.push(Object.assign({e:ev,t:Date.now()},p));store.set('anq',q.slice(-400));
   const c=store.get('anc',{});c[ev]=(c[ev]||0)+1;store.set('anc',c);}catch(_){}}
+function pvTrack(ev,p){if(typeof pvOn!=='function'||!pvOn())return;
+  if(ev==='level_start'){const c=store.get('pvCur',null);if(c)pvKayit(c.L,'birakti',(Date.now()-c.t)/1000,0);store.set('pvCur',{L:p.L,t:Date.now()});}
+  else if(ev==='level_win'){store.set('pvCur',null);pvKayit(p.L,'kazandi',p.sec,p.stars);pvBolumSonu();}
+  else if(ev==='level_fail'){store.set('pvCur',null);pvKayit(p.L,'kaybetti',p.sec,0);pvBolumSonu();}
+  else if(ev==='ad_inter')pvAd('gecis_gosterildi','bolumArasi',p.L);
+  else if(ev==='ad_inter_miss')pvAd('gecis_yok','bolumArasi',G&&G.L);
+  else if(ev==='noads_offer')pvAd('reklamsiz_teklif_goruldu','diger',p.L);
+  else if(ev==='noads_buy'&&p.from==='offer')pvAd('reklamsiz_teklif_kabul','diger',0);}
 function anDays(){const i=store.get('inst',0)||Date.now();return Math.floor((Date.now()-i)/864e5);}
 function stat(L,k,n){const st=store.get('stats',{});st[L]=st[L]||{t:0,f:0,b:0,w:0};st[L][k]+=n||1;store.set('stats',st);}
 /* v1.40 Remote Config: Firebase'den güncelleme çıkmadan değiştirilebilen ayarlar.
@@ -3097,7 +3105,7 @@ function payFor(k){
 function adBoost(k){
   showModal('<div class="adbst"><img src="assets/'+{undo:'u_undo',extra:'u_extra',magnet:'u_magnet'}[k]+'.webp" alt=""></div><h2>'+BOOST[k].n+'</h2><p>'+tt('Kısa bir reklam izle, 1 tane kazan.','Watch a short ad to get 1.')+'</p><div class="btns"><button class="btn gold" id="abGo">📺 '+tt('Reklam izle','Watch ad')+'</button><button class="btn alt" id="abNo">'+tt('Vazgeç','No thanks')+'</button></div>');
   $('abNo').onclick=()=>{sfx.tap();hideModal();};
-  $('abGo').onclick=()=>{sfx.tap();fakeAd(()=>{if(!G)return;G.adB=G.adB||{};G.adB[k]=(G.adB[k]||0)+1;inv[k]++;saveEco();hideModal();track('booster_ad',{k,L:G.L});updateBoosters();setTimeout(()=>useBooster(k),250);});};
+  $('abGo').onclick=()=>{sfx.tap();fakeAd(()=>{if(!G)return;G.adB=G.adB||{};G.adB[k]=(G.adB[k]||0)+1;inv[k]++;saveEco();hideModal();track('booster_ad',{k,L:G.L});updateBoosters();setTimeout(()=>useBooster(k),250);},'guclendirici');};
 }
 async function useBooster(k){
   ac();
@@ -3224,11 +3232,11 @@ function dressModal(){
 
 function showModal(html){const c=$('card');c.classList.remove('dressed');c.innerHTML=html;try{dressModal();iconize(c);}catch(e){}$('modal').classList.add('show');}
 function hideModal(){$('modal').classList.remove('show');if(rcMusic){rcMusic=false;try{startMusic();}catch(e){}}}
-function fakeAd(done){
-  if(NATIVE()&&plug('AdMob'))return nativeAd(done);
+function fakeAd(done,yer){
+  if(NATIVE()&&plug('AdMob'))return nativeAd(done,yer);
   let n=3;
   showModal(_t('<div class="em">📺</div><h2>Reklam</h2><p>Mağaza sürümünde burada kısa bir reklam oynayacak. Şimdilik test.</p><div class="adc" id="adc">3</div>'));
-  const t=setInterval(()=>{n--;const el=$('adc');if(el)el.textContent=n;if(n<=0){clearInterval(t);track('ad_reward',{});adMark();done();}},1000);
+  const t=setInterval(()=>{n--;const el=$('adc');if(el)el.textContent=n;if(n<=0){clearInterval(t);pvAd('odullu_basladi',yer,(G&&G.L)||curLevel());pvAd('odullu_tamam',yer,(G&&G.L)||curLevel());track('ad_reward',{});adMark();done();}},1000);
 }
 /* ---------- övgü yazıları (v1.01) ---------- */
 function praiseWord(n,big){const el=document.createElement('div');el.className='praise'+(big?' big':'');
@@ -3277,7 +3285,7 @@ function win0(){
   const nL=G.L>DAY0?curLevel():G.L+1,wL=G.L;
   if($('mNext'))$('mNext').onclick=()=>{sfx.tap();afterWin(wL,()=>goNext(nL));};
   if($('mHome'))$('mHome').onclick=()=>{sfx.tap();afterWin(wL,()=>{openRoad(true);rewardFly();});};
-  if($('mDbl'))$('mDbl').onclick=()=>fakeAd(()=>{setCoins(coins+reward,true);if(window._rwd)window._rwd.c+=reward;sfx.coin();toast('+'+reward+_t(' 🪙 eklendi'));const b=$('mDbl');if(b){b.disabled=true;b.classList.add('done');b.textContent='✓ '+tt('2 kat altın alındı','Double coins claimed');}});
+  if($('mDbl'))$('mDbl').onclick=()=>fakeAd(()=>{setCoins(coins+reward,true);if(window._rwd)window._rwd.c+=reward;sfx.coin();toast('+'+reward+_t(' 🪙 eklendi'));const b=$('mDbl');if(b){b.disabled=true;b.classList.add('done');b.textContent='✓ '+tt('2 kat altın alındı','Double coins claimed');}},'ikiKat');
   if($('mMap'))$('mMap').addEventListener('click',()=>{window._rwd=null;},true);
   if($('mMap'))$('mMap').onclick=()=>{sfx.tap();if(tut3)window._ftueR=1;citySel=nr.i;openMenu('city');};
 }
@@ -3306,7 +3314,7 @@ function lose(){
   $('mRetry').onclick=()=>{if(lives>0)startLevel(G.L);else livesModal(()=>startLevel(G.L));};
   const cont=(via)=>{track('continue',{L:G.L,via:via||'coin',n:G.conts+1});if(G.wst0){store.set('wst',G.wst0);G.wst0=0;}addLife(1);G.conts++;G.used+=2;G.over=false;hideModal();addSlot();sfx.magic();updateBoosters();toast(_t('+1 yer, devam! 💪'));};
   if(canSlot){
-    if($('mAd'))$('mAd').onclick=()=>{if(perk(5)&&!G.kale){G.kale=1;cont('perk');return;}fakeAd(()=>{G.adc=1;cont('ad');});};
+    if($('mAd'))$('mAd').onclick=()=>{if(perk(5)&&!G.kale){G.kale=1;cont('perk');return;}fakeAd(()=>{G.adc=1;cont('ad');},'devam');};
   }
 }
 let AD_DAY=5;function adLeft(){AD_DAY=cfg('ad_coin_daily')+(perk(22)?3:0);const d=new Date().toDateString(),o=store.get('adc',{d:'',n:0});return o.d===d?AD_DAY-o.n:AD_DAY;}
@@ -3324,7 +3332,7 @@ function openShop(msg,back){
   document.querySelectorAll('.pack').forEach(p=>p.onclick=()=>{
     if(p.dataset.noads){if(store.get('noads',false)){toast(_t('Zaten reklamsız oynuyorsun ✓'));return;}iap('noads',()=>{noadsGrant();close();toast(tt('Reklamlar kalktı ✓ +1500 🪙','Ads removed ✓ +1500 🪙'),true);});return;}
     const c=+p.dataset.c;
-    if(p.dataset.ad){if(adLeft()<=0){toast(tt('Bugünkü reklam hakkın bitti, yarın yine gel','No more ad rewards today, come back tomorrow'));return;}fakeAd(()=>{adUse();setCoins(coins+c,true);sfx.coin();close();toast('+'+c+' 🪙');});}
+    if(p.dataset.ad){if(adLeft()<=0){toast(tt('Bugünkü reklam hakkın bitti, yarın yine gel','No more ad rewards today, come back tomorrow'));return;}fakeAd(()=>{adUse();setCoins(coins+c,true);sfx.coin();close();toast('+'+c+' 🪙');},'magaza');}
     else iap('c'+c,()=>{setCoins(coins+c,true);sfx.coin();toast('+'+c+' 🪙');close();});
   });
 }
@@ -3641,7 +3649,8 @@ function perkCard(i,big){
 /* ---------- ana menü ---------- */
 let menuTab='home',citySel=null,roadCity=null;
 function curLandmark(){const n=nextRestore();if(n)return n.i;const c=CITIES[cityOfLevel(curLevel())];return c.lm[1]-1;}
-function openMenu(tab){if(G&&G.busy)return;menuTab=tab||'home';hideModal();try{clubDaily();}catch(e){}renderMenu();$('menu').classList.add('show');if(menuTab==='home')requestAnimationFrame(layoutHome);snowFx();try{startMusic();}catch(e){}}
+function openMenu(tab){if(G&&G.busy)return;menuTab=tab||'home';hideModal();try{clubDaily();}catch(e){}renderMenu();$('menu').classList.add('show');if(menuTab==='home')requestAnimationFrame(layoutHome);snowFx();try{startMusic();}catch(e){}
+  try{if(pvSorGerekir())setTimeout(()=>{if(pvSorGerekir()&&!$('modal').classList.contains('show')&&$('menu').classList.contains('show')){store.set('pvAsked',true);pvSor();}},1200);}catch(e){}}
 function closeMenu(){$('menu').classList.remove('show');snowFx();try{startMusic();}catch(e){}}
 function renderMenu(){
   try{rsBadge();}catch(e){}
@@ -4706,7 +4715,7 @@ function renderShop(){
     buyFx({from:$('shOffer').querySelector('.shchest'),img:'r_chest',open:'r_chestopen',title:tt('Özel Teklif!','Special Offer!'),got:[{img:'ui_coin',txt:'+2500'}].concat(BG(3)),c:2500,c0,done:renderMenu});});
   if($('shClub'))$('shClub').onclick=()=>{sfx.tap();clubModal();};
   if($('shStart'))$('shStart').onclick=()=>{sfx.tap();starterModal();};$('shKmb').onclick=()=>{sfx.tap();kmbModal();};
-  $('shFree').onclick=()=>{if(adLeft()<=0){toast(tt('Bugünkü reklam hakkın bitti, yarın yine gel','No more ad rewards today, come back tomorrow'));return;}fakeAd(()=>{adUse();hideModal();setCoins(coins+40,true);toast('+40 🪙');fly();});};
+  $('shFree').onclick=()=>{if(adLeft()<=0){toast(tt('Bugünkü reklam hakkın bitti, yarın yine gel','No more ad rewards today, come back tomorrow'));return;}fakeAd(()=>{adUse();hideModal();setCoins(coins+40,true);toast('+40 🪙');fly();},'magazaBedava');};
   document.querySelectorAll('#tab-shop .shc').forEach(c=>c.onclick=()=>{
     if(c.dataset.noads){if(noads){toast(_t('Zaten reklamsız oynuyorsun ✓'));return;}iap('noads',()=>{const c0=coins;noadsGrant();buyFx({from:c,img:'s_noads',title:tt('Reklamsız!','Ad-free!'),got:[{txt:tt('Reklamlar sonsuza dek kalktı','Ads removed forever')},{img:'ui_coin',txt:'+1500'}],c:1500,c0,done:renderMenu});});return;}
     if(c.dataset.b1){const k=c.dataset.b1,pr=b3Price(k);if(coins<pr){sfx.no();toast(_t('Yeterli altın yok · 🪙')+pr);return;}setCoins(coins-pr,true);inv[k]+=3;saveEco();track('buy_b3',{k});buyFx({from:c.querySelector('.sb1i'),img:{undo:'u_undo',extra:'u_extra',magnet:'u_magnet'}[k],title:BOOST[k].n,got:[{img:{undo:'u_undo',extra:'u_extra',magnet:'u_magnet'}[k],txt:'+3'}],done:renderMenu});return;}
@@ -4737,11 +4746,12 @@ function feedback(){
 }
 function openSettings(){
   const row=(id,ic,label,on)=>'<div class="srow"><span>'+ic+' '+label+'</span><button class="tog'+(on?' on':'')+'" id="'+id+'"><i></i></button></div>';
-  showModal(_t('<div class="em">⚙️</div><h2>Ayarlar</h2>')+'<div class="srow"><span>🌐 Dil / Language</span><span class="lgs"><button class="lg'+(LANG==='tr'?' on':'')+'" data-lg="tr">TR</button><button class="lg'+(LANG==='en'?' on':'')+'" data-lg="en">EN</button></span></div>'+row('tMus','🎵',_t('Müzik'),musicOn)+row('tSnd','🔊',_t('Ses efektleri'),soundOn)+row('tVib','📳',_t('Titreşim'),vibOn)+row('tNot','🔔',tt('Bildirimler','Notifications'),!store.get('notifOff',false))+row('tCb','👁️',tt('Renk körü modu','Colour-blind mode'),cbOn)+(psOwnsCos('hat_kis')||psOwnsCos('hat_yy')?row('tHat','🧣',tt('Kışlık kıyafetler','Winter outfits')+'<small id="tHatN" style="display:block;font-size:11px;opacity:.75">'+hatName(store.get('hatOn',null))+'</small>',!!store.get('hatOn',null)):'')+(store.get('dev',false)?row('tTest','🧪',_t('Test modu'),store.get('testmode',false))+row('tSea','🎆',tt('Yeni Yıl sezonunu önizle','Preview New Year season'),store.get('psForce',null)===1)+row('tRc','🏁',tt('Boğaz Yarışını şimdi aç','Open Bosphorus Race now'),!!store.get('rcForce',false))+'<p class="tnote" style="font-size:11px;margin:6px 0 0">'+adDbg()+'</p>':'')+(store.get('dev',false)&&store.get('testmode',false)?_t('<div class="tgo"><input id="tgoN" type="number" min="1" max="60" placeholder="Bölüm no"><button class="tbtn" id="tgoB">Bölüme git</button></div>')+'<div class="tgo"><button class="tbtn" id="tStar">+50 ⭐</button><button class="tbtn" id="tCoin">+500 🪙</button><button class="tbtn treset" id="tReset">'+tt('Sıfırla','Reset')+'</button></div>':'')+(IOS()?'<button class="btn alt" id="mRest" style="margin-top:14px">🔄 '+tt('Satın alımları geri yükle','Restore purchases')+'</button>':'')+_t('<button class="btn alt" id="mHow" style="margin-top:14px">❓ Nasıl oynanır</button>')+'<p class="note" style="font-size:11px;opacity:.6;margin:6px 0 0">v'+WEB_VER+(window.CdvPurchase?' · iap'+(_iapReady?' ✓':_iapInited?' …':' ✗'):'')+'</p>'+(store.get('dev',false)?_t('<button class="btn alt" id="mStat">📊 Test istatistikleri</button>'):'')+_t('<button class="btn gold" id="mFb" style="margin-top:10px">💬 Geri bildirim gönder</button><button class="btn" id="mOk">Tamam</button>'));
+  showModal(_t('<div class="em">⚙️</div><h2>Ayarlar</h2>')+'<div class="srow"><span>🌐 Dil / Language</span><span class="lgs"><button class="lg'+(LANG==='tr'?' on':'')+'" data-lg="tr">TR</button><button class="lg'+(LANG==='en'?' on':'')+'" data-lg="en">EN</button></span></div>'+row('tMus','🎵',_t('Müzik'),musicOn)+row('tSnd','🔊',_t('Ses efektleri'),soundOn)+row('tVib','📳',_t('Titreşim'),vibOn)+row('tNot','🔔',tt('Bildirimler','Notifications'),!store.get('notifOff',false))+row('tPv','📊',tt('Oynanış verisi gönder','Share gameplay data'),pvOn())+row('tCb','👁️',tt('Renk körü modu','Colour-blind mode'),cbOn)+(psOwnsCos('hat_kis')||psOwnsCos('hat_yy')?row('tHat','🧣',tt('Kışlık kıyafetler','Winter outfits')+'<small id="tHatN" style="display:block;font-size:11px;opacity:.75">'+hatName(store.get('hatOn',null))+'</small>',!!store.get('hatOn',null)):'')+(store.get('dev',false)?row('tTest','🧪',_t('Test modu'),store.get('testmode',false))+row('tSea','🎆',tt('Yeni Yıl sezonunu önizle','Preview New Year season'),store.get('psForce',null)===1)+row('tRc','🏁',tt('Boğaz Yarışını şimdi aç','Open Bosphorus Race now'),!!store.get('rcForce',false))+'<p class="tnote" style="font-size:11px;margin:6px 0 0">'+adDbg()+'</p>':'')+(store.get('dev',false)&&store.get('testmode',false)?_t('<div class="tgo"><input id="tgoN" type="number" min="1" max="60" placeholder="Bölüm no"><button class="tbtn" id="tgoB">Bölüme git</button></div>')+'<div class="tgo"><button class="tbtn" id="tStar">+50 ⭐</button><button class="tbtn" id="tCoin">+500 🪙</button><button class="tbtn treset" id="tReset">'+tt('Sıfırla','Reset')+'</button></div>':'')+(IOS()?'<button class="btn alt" id="mRest" style="margin-top:14px">🔄 '+tt('Satın alımları geri yükle','Restore purchases')+'</button>':'')+_t('<button class="btn alt" id="mHow" style="margin-top:14px">❓ Nasıl oynanır</button>')+'<p class="note" style="font-size:11px;opacity:.6;margin:6px 0 0">v'+WEB_VER+(window.CdvPurchase?' · iap'+(_iapReady?' ✓':_iapInited?' …':' ✗'):'')+'</p>'+(store.get('dev',false)?_t('<button class="btn alt" id="mStat">📊 Test istatistikleri</button>'):'')+_t('<button class="btn gold" id="mFb" style="margin-top:10px">💬 Geri bildirim gönder</button><button class="btn" id="mOk">Tamam</button>'));
   $('tSnd').onclick=()=>{soundOn=!soundOn;store.set('snd',soundOn);$('tSnd').classList.toggle('on',soundOn);if(soundOn){ac();sfx.tap();}};
   $('tNot').onclick=()=>{const off=!store.get('notifOff',false);store.set('notifOff',off);$('tNot').classList.toggle('on',!off);sfx.tap();if(off){const LN=plug('LocalNotifications');if(LN)LN.cancel({notifications:[11,12,13,14,15,16].map(id=>({id}))}).catch(()=>{});}};
   if($('tRc'))$('tRc').onclick=()=>{const on=!store.get('rcForce',false);store.set('rcForce',on);$('tRc').classList.toggle('on',on);sfx.tap();};
   if($('tSea'))$('tSea').onclick=()=>{const on=store.get('psForce',null)!==1;store.set('psForce',on?1:null);$('tSea').classList.toggle('on',on);sfx.tap();if(on){const th=PS_THEMES[1];for(const r of [['hat'],['decor'],['horn'],['trail'],['skin','p30']])psGive(r,th,true);}snowFx();toast(on?tt('Yeni Yıl sezonu önizlemesi açık 🎆','New Year season preview on 🎆'):tt('Önizleme kapandı','Preview off'));};
+  $('tPv').onclick=()=>{const on=!pvOn();pvIzinYaz(on);$('tPv').classList.toggle('on',on);sfx.tap();toast(on?tt('Oynanış verisi isimsiz gönderilecek. Teşekkürler 💙','Gameplay data will be shared anonymously. Thanks 💙'):tt('Kapatıldı; gönderilmiş verilerin de silindi','Turned off; data already sent was deleted too'),true);};
   $('tVib').onclick=()=>{vibOn=!vibOn;store.set('vib',vibOn);$('tVib').classList.toggle('on',vibOn);buzz(30);};
   if($('tHat'))$('tHat').onclick=()=>{const own=['kis','yy'].filter(h=>psOwnsCos('hat_'+h)),opts=[null].concat(own),cur=store.get('hatOn',null),nx=opts[(opts.indexOf(cur)+1)%opts.length];store.set('hatOn',nx);$('tHat').classList.toggle('on',!!nx);const nn=$('tHatN');if(nn)nn.textContent=hatName(nx);sfx.tap();(nx==='yy'?loadImg('assets/atlas_hat_yy.webp?v=2'):Promise.resolve()).then(()=>{try{if(G&&G.cells)renderAll();}catch(e){}});};
   $('tCb').onclick=()=>{cbOn=!cbOn;store.set('cb',cbOn);$('tCb').classList.toggle('on',cbOn);cbApply();cbRefresh();sfx.tap();toast(cbOn?tt('Renk körü modu açık: her rengin kendi şekli var ● ■ ★ ▲ ◆ 💧','Colour-blind mode on: every colour has its own shape ● ■ ★ ▲ ◆ 💧'):tt('Renk körü modu kapalı','Colour-blind mode off'),true);};
@@ -5145,15 +5155,15 @@ function fakeBanTick(){if(NATIVE())return;let el=$('fakeBan');const on=store.get
   if(!el){el=document.createElement('div');el.id='fakeBan';el.textContent='Banner (test)';document.body.appendChild(el);}
   banSpace(58);el.style.display=$('modal').classList.contains('show')?'none':'flex';}
 setInterval(fakeBanTick,500);
-async function nativeAd(done){const A=plug('AdMob');if(_adBusy)return;_adBusy=true;let got=false;const hs=[];
+async function nativeAd(done,yer){const A=plug('AdMob');yer=yer||'diger';if(_adBusy)return;_adBusy=true;let got=false;const hs=[];
   const clean=()=>{hs.forEach(h=>{try{h.remove();}catch(e){}});_adBusy=false;AD.reward.ok=0;setTimeout(()=>adLoad('reward'),800);};
   try{await adInit();
     if(!adFresh('reward')){toast(tt('Reklam hazırlanıyor…','Getting the ad ready…'));if(!(await adLoad('reward')))throw new Error('noad');}
     hs.push(await A.addListener('onRewardedVideoAdReward',()=>{got=true;}));
-    hs.push(await A.addListener('onRewardedVideoAdDismissed',()=>{clean();if(got){track('ad_reward',{});adMark();try{done();}catch(e){errLog(e);}}else toast(tt('Ödül için reklamı sonuna kadar izlemelisin','Watch the full ad to get the reward'));}));
-    hs.push(await A.addListener('onRewardedVideoAdFailedToShow',()=>{clean();toast(tt('Reklam şu an açılamadı, biraz sonra tekrar dene','Ad unavailable, try again shortly'));}));
+    hs.push(await A.addListener('onRewardedVideoAdDismissed',()=>{clean();pvAd('odullu_basladi',yer,(G&&G.L)||curLevel());pvAd(got?'odullu_tamam':'odullu_yarim',yer,(G&&G.L)||curLevel());if(got){track('ad_reward',{});adMark();try{done();}catch(e){errLog(e);}}else toast(tt('Ödül için reklamı sonuna kadar izlemelisin','Watch the full ad to get the reward'));}));
+    hs.push(await A.addListener('onRewardedVideoAdFailedToShow',()=>{clean();pvAd('odullu_yok',yer,(G&&G.L)||curLevel());toast(tt('Reklam şu an açılamadı, biraz sonra tekrar dene','Ad unavailable, try again shortly'));}));
     AD.reward.ok=0;await A.showRewardVideoAd();
-  }catch(e){clean();toast(tt('Reklam şu an yüklenemedi, internetini kontrol edip tekrar dene','Ad could not load, check your connection and try again'));}}
+  }catch(e){clean();pvAd('odullu_yok',yer,(G&&G.L)||curLevel());toast(tt('Reklam şu an yüklenemedi, internetini kontrol edip tekrar dene','Ad could not load, check your connection and try again'));}}
 // bölüm arası reklam: ad_inter_from. bölümden itibaren galibiyet sonrası, iki reklam arası en az ad_inter_gap_sec sn, kaybedince yok, reklamsız alınca yok.
 // Reklam hazır değilse oyuncu bekletilmez, o seferlik atlanır.
 function adMark(){_lastAdAt=Date.now();}
@@ -5281,6 +5291,36 @@ let _lbLast=0;
 async function lbSubmit(force){if(!lbOn()||lbOff()||!unl('lb'))return null;const now=Date.now();if(!force&&now-_lbLast<30000)return null;_lbLast=now;
   try{return await lbApi('lb',{pid:chPid(),nick:lbNick(),lvl:Math.max(0,curLevel()-1),stars:stars|0,plat:lbPlat()});}catch(e){return null;}}
 function lbBtn(nu){if(!lbOn()||!unl('lb'))return '';return '<button class="hday hlbb'+nu+'" id="goLb"><span class="hdi">🏆</span><b>'+tt('Sıralama','Ranks')+'</b></button>';}
+/* ---------- v1.58 Oynanış verisi (pano): yalnız oyuncu izin verirse. Bölüm denemeleri + reklam sayaçları, isimsiz (rastgele oyun kimliği).
+   Sunucu: tealbirdgames.com/api/oynama (paket; aynı paket numarası iki kez sayılmaz), /api/oynama-sil (izin kapatılınca). ---------- */
+function pvOn(){return store.get('pvOk',null)===true;}
+function pvGun(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function pvMod(L){return L>=DAY0?'gunluk':(L>LOOP0?'dongu':'normal');}
+function pvKayit(L,sonuc,sec,yildiz){if(!pvOn())return;const n=(store.get('pvSira',0)|0)+1;store.set('pvSira',n);
+  const q=store.get('pvQ',[]);q.push([n,pvGun(),L,pvMod(L),sonuc,Math.max(0,Math.min(999,sec|0)),yildiz|0,WEB_VER]);store.set('pvQ',q.slice(-200));if(q.length>=10)pvGonder();}
+function pvAd(olay,yer,L){if(!pvOn())return;const m=store.get('pvAd',{}),k=pvGun()+'|'+olay+'|'+(yer||'diger');const v=m[k]||[0,0];v[0]++;v[1]=Math.max(v[1],L|0);m[k]=v;store.set('pvAd',m);}
+let _pvBusy=false,_pvSon=0,_pvBn=null;
+async function pvBuild(){if(_pvBn!==null)return _pvBn;try{const A=plug('App'),inf=A&&A.getInfo?await A.getInfo():null;_pvBn=parseInt(inf&&inf.build)||0;}catch(e){_pvBn=0;}return _pvBn;}
+async function pvGonder(beacon){if(!pvOn()||_pvBusy)return;
+  let pend=store.get('pvPend',null);
+  if(!pend){const q=store.get('pvQ',[]),am=store.get('pvAd',{}),ak=Object.keys(am);if(!q.length&&!ak.length)return;
+    const pk=(store.get('pvPk',0)|0)+1;store.set('pvPk',pk);const kay=q.slice(0,30);store.set('pvQ',q.slice(30));
+    let rk=null;if(ak.length){rk={paket:pk,platform:lbPlat(),derleme:await pvBuild(),surum:WEB_VER,satirlar:ak.slice(0,60).map(k=>{const a=k.split('|');return [a[0],a[1],a[2],am[k][0],am[k][1]];})};
+      const rest={};ak.slice(60).forEach(k=>rest[k]=am[k]);store.set('pvAd',rest);}
+    pend={pid:chPid(),paket:pk,kayitlar:kay,reklam:rk};store.set('pvPend',pend);}
+  const body=JSON.stringify(pend);_pvSon=Date.now();
+  if(beacon&&navigator.sendBeacon&&LB_BASE==='/api/'){try{if(navigator.sendBeacon(LB_BASE+'oynama',new Blob([body],{type:'application/json'})))store.set('pvPend',null);}catch(e){}return;}
+  _pvBusy=true;try{const r=await fetch(LB_BASE+'oynama',{method:'POST',headers:{'content-type':'application/json'},body});if(r.ok||(r.status>=400&&r.status<500))store.set('pvPend',null);}catch(e){}finally{_pvBusy=false;}
+  if(!store.get('pvPend',null)&&(store.get('pvQ',[]).length>=10))setTimeout(()=>pvGonder(),1500);}
+function pvBolumSonu(){if(pvOn()&&Date.now()-_pvSon>120000)pvGonder();}
+function pvIzinYaz(ok){const eski=store.get('pvOk',null);store.set('pvOk',!!ok);track('pv_izin',{ok:ok?1:0});
+  if(!ok){store.set('pvQ',[]);store.set('pvAd',{});store.set('pvPend',null);store.set('pvCur',null);if(eski===true){fetch(LB_BASE+'oynama-sil',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({pid:chPid()})}).catch(()=>{});}}}
+function pvSor(then){track('pv_sor',{L:curLevel()});
+  showModal('<div class="em">📊</div><h2>'+tt('Oyunu birlikte geliştirelim mi?','Help us make the game better?')+'</h2><p>'+tt('Hangi bölümlerin zor geldiğini görebilmek için oyundaki ilerlemeni (bölüm, süre, yıldız) ve reklam sayılarını <b>isimsiz</b> olarak alabilir miyiz? Bu bilgiler <b>yalnızca analiz için</b>, oyunu daha iyi yapmak amacıyla kullanılır. Adın, e-postan, rehberin, fotoğrafların ya da başka hiçbir kişisel bilgin alınmaz; sadece hangi ülkeden oynadığın görünür. İstediğin zaman Ayarlar\'dan kapatabilirsin.','To see which levels feel too hard, may we <b>anonymously</b> collect your in-game progress (level, time, stars) and ad counts? This is used <b>only for analytics</b>, to make the game better. We never collect your name, email, contacts, photos or any other personal information; we only see which country you play from. You can turn this off any time in Settings.')+'</p><button class="btn gold" id="pvYes">'+tt('İzin ver','Allow')+'</button><button class="btn alt" id="pvNo">'+tt('Hayır, teşekkürler','No, thanks')+'</button>');
+  $('pvYes').onclick=()=>{sfx.tap();pvIzinYaz(true);hideModal();toast(tt('Teşekkürler! 💙','Thank you! 💙'));if(then)then();};
+  $('pvNo').onclick=()=>{sfx.tap();pvIzinYaz(false);hideModal();if(then)then();};}
+function pvSorGerekir(){return store.get('pvOk',null)===null&&curLevel()>=4&&!store.get('pvAsked',false);}
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&pvOn())pvGonder(true);});
 function lbBlk(){return store.get('lbBlk',[]);}
 function lbRow(r,rk,meP){const me=r.p===meP,bl=!me&&lbBlk().includes(r.p);return '<li class="'+(me?'me':'lbo')+'"'+(me?'':' data-p="'+chEsc(r.p)+'"')+'><b>'+(rk<=3?['🥇','🥈','🥉'][rk-1]:rk+'.')+'</b><span>'+(bl?'<i class="lbbl">'+tt('Gizlenen kaptan','Hidden captain')+'</i>':chEsc(r.nick))+'</span><em>'+tt('Bölüm ','Lv ')+r.lvl+'</em>'+(me?'':'<button class="lbflag" aria-label="'+tt('Seçenekler','Options')+'">⋯</button>')+'</li>';}
 function lbAct(p,nick){const bl=lbBlk().includes(p);
@@ -5404,7 +5444,7 @@ function backBtn(){try{
 /* v1.46 Canlı güncelleme (Apple/Google onayı beklemeden): oyunun kodu ve görselleri tealbirdgames.com/ota/ferrytales'den
    güncellenir. Uygulama açılınca manifest kontrol edilir, sadece değişen dosyalar indirilir, oyuncu uygulamadan çıkıp dönünce yeni sürüm açılır.
    Yeni yerel eklenti gerektiren değişiklikler için manifestte native_min_ios / native_min_android (derleme numarası) yükseltilir. */
-const WEB_VER='1.57.1';
+const WEB_VER='1.58.0';
 const OTA_BASE='https://tealbirdgames.com/ota/ferrytales/';
 function verGT(a,b){const x=String(a).split('.').map(Number),y=String(b).split('.').map(Number);for(let i=0;i<3;i++){if((x[i]||0)>(y[i]||0))return true;if((x[i]||0)<(y[i]||0))return false;}return false;}
 async function otaCheck(){const U=plug('CapacitorUpdater');if(!U)return;
